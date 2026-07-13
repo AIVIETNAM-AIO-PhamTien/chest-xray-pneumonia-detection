@@ -1,0 +1,42 @@
+# Data & datasets (dataset lives on Kaggle, never commit it)
+# Anchored to repo root so this doesn't accidentally match src/pneumo_snn/data/
+/data/
+/datasets/
+*.csv
+*.zip
+
+# Model artifacts / checkpoints
+*.ckpt
+*.pt
+*.pth
+*.h5
+checkpoints/
+
+# Experiment tracking artifacts
+wandb/
+mlruns/
+
+# Kaggle credentials
+kaggle.json
+.kaggle/
+
+# Python / uv
+__pycache__/
+*.pyc
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Editors / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Env files
+.env

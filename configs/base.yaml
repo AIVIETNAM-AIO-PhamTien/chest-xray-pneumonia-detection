@@ -1,0 +1,14 @@
+# Minimal base config example. Copy/override in configs/model/ or configs/train/
+# as experiments are added. Values below follow the paper's reported setup.
+seed: 42
+
+data:
+  img_size: 128
+  channels: 3
+  batch_size: 32
+
+train:
+  epochs: 30
+  optimizer: adam
+  lr: 1.0e-5
+  weight_decay: 1.0e-5

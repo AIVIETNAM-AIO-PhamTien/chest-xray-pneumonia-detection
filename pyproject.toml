@@ -1,0 +1,53 @@
+[project]
+name = "chest-xray-pneumonia-detection"
+version = "0.1.0"
+description = "Chest X-ray Image Classification for Pneumonia Detection — reproduction of the SNN-GRU-CNN hybrid model (Slimi et al., Sci. Rep. 2025)"
+readme = "README.md"
+authors = [
+    { name = "tienphamMLE", email = "tien.pham.mle@gmail.com" }
+]
+requires-python = ">=3.11"
+dependencies = [
+    "imbalanced-learn>=0.14.2",
+    "matplotlib>=3.11.0",
+    "numpy>=2.4.6",
+    "pandas>=3.0.3",
+    "pillow>=12.3.0",
+    "pyyaml>=6.0.3",
+    "scikit-learn>=1.9.0",
+    "snntorch>=1.0.0",
+    "torch>=2.13.0",
+    "tqdm>=4.68.4",
+]
+
+[project.scripts]
+chest-xray-pneumonia-detection = "pneumo_snn:main"
+
+[tool.uv.build-backend]
+module-name = "pneumo_snn"
+
+[build-system]
+requires = ["uv_build>=0.11.21,<0.12.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "black>=26.5.1",
+    "jupyter>=1.1.1",
+    "kaggle>=2.2.3",
+    "nbstripout>=0.9.1",
+    "pre-commit>=4.6.0",
+    "pytest>=9.1.1",
+    "ruff>=0.15.21",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.black]
+line-length = 100
+target-version = ["py311"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

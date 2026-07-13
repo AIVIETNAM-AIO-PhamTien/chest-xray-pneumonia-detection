@@ -1,0 +1,24 @@
+name: Notebook clean check
+
+on:
+  pull_request:
+
+jobs:
+  nb-clean-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+
+      - name: Set up Python
+        run: uv python install
+
+      - name: Install nbstripout
+        run: uv tool install nbstripout
+
+      - name: Verify notebooks have no committed output
+        run: |
+          find . -name "*.ipynb" -not -path "./.git/*" -print0 \
+            | xargs -0 -r -n1 uvx nbstripout --verify

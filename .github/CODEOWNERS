@@ -1,0 +1,8 @@
+# Điền tên/GitHub username sau khi team chia việc theo từng block của paper.
+# Xem docs/paper_mapping.md để biết block nào ứng với thư mục nào.
+#
+# src/pneumo_snn/data/             @<owner-preprocessing>
+# src/pneumo_snn/models/           @<owner-models>
+# src/pneumo_snn/training/         @<owner-training>
+# src/pneumo_snn/robustness/       @<owner-robustness>
+# src/pneumo_snn/interpretability/ @<owner-interpretability>
