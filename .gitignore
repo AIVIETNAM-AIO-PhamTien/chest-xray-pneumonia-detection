@@ -1,0 +1,26 @@
+# Data
+data/raw/*
+!data/raw/.gitkeep
+data/processed/*
+!data/processed/.gitkeep
+
+# Models & outputs
+models/*
+!models/.gitkeep
+outputs/logs/*
+!outputs/logs/.gitkeep
+outputs/figures/*
+!outputs/figures/.gitkeep
+
+# Python
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+*.egg-info/
+.venv/
+venv/
+.env
+
+# OS
+.DS_Store
+Thumbs.db
