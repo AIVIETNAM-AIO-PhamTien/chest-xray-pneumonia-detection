@@ -7,7 +7,7 @@ data:
   num_workers: 2
 
 model:
-  backbone: "resnet18"
+  name: "resnet18"
   pretrained: true
   num_classes: 2
   freeze_backbone: false

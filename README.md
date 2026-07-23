@@ -25,7 +25,7 @@ module2/
 │   ├── config.py              # dataclass Config + load_config từ YAML
 │   ├── dataset.py             # build_dataloaders (ImageFolder train/val/test)
 │   ├── transforms.py          # augmentation & preprocessing pipeline
-│   ├── model.py                # build_model (transfer learning backbone)
+│   ├── models/                  # model architectures (registry pattern)
 │   ├── train.py                # training loop + CLI entrypoint
 │   ├── evaluate.py             # accuracy/precision/recall/f1/confusion matrix
 │   └── utils.py                 # set_seed, checkpoint, EarlyStopping
@@ -85,7 +85,7 @@ data:
   num_workers: 2
 
 model:
-  backbone: "resnet18"
+  name: "resnet18"
   pretrained: true
   num_classes: 2
   freeze_backbone: false

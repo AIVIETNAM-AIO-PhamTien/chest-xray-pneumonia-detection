@@ -29,7 +29,7 @@ class ModelConfig:
     """Settings related to model architecture.
 
     Attributes:
-        backbone: Registered model name (see `src/models/`), e.g. "resnet18"
+        name: Registered model name (see `src/models/`), e.g. "resnet18"
             or "simple_cnn".
         pretrained: Whether to load pretrained weights.
         num_classes: Number of output classes.
@@ -38,7 +38,7 @@ class ModelConfig:
             model builder (e.g. {"img_size": 224} for a ViT).
     """
 
-    backbone: str = "resnet18"
+    name: str = "resnet18"
     pretrained: bool = True
     num_classes: int = 2
     freeze_backbone: bool = False

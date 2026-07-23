@@ -174,7 +174,7 @@ def _run(cfg: Config, run_name: str) -> None:
     logger.info("Classes: %s", class_to_idx)
 
     model = build_model(
-        backbone=cfg.model.backbone,
+        name=cfg.model.name,
         num_classes=cfg.model.num_classes,
         pretrained=cfg.model.pretrained,
         freeze_backbone=cfg.model.freeze_backbone,
@@ -280,6 +280,13 @@ def main() -> None:
         choices=["online", "offline", "disabled"],
         help="Override cfg.output.wandb_mode.",
     )
+    parser.add_argument(
+        "--model", type=str, default=None, help="Override cfg.model.name."
+    )
+    parser.add_argument(
+        "--epochs", type=int, default=None, help="Override cfg.train.epochs."
+    )
+    parser.add_argument("--lr", type=float, default=None, help="Override cfg.train.lr.")
     args = parser.parse_args()
 
     cfg = load_config(args.config)
@@ -289,6 +296,12 @@ def main() -> None:
         cfg.train.device = args.device
     if args.wandb_mode is not None:
         cfg.output.wandb_mode = args.wandb_mode
+    if args.model is not None:
+        cfg.model.name = args.model
+    if args.epochs is not None:
+        cfg.train.epochs = args.epochs
+    if args.lr is not None:
+        cfg.train.lr = args.lr
 
     run_name = cfg.output.run_name or Path(args.config).stem
     _run(cfg, run_name)
