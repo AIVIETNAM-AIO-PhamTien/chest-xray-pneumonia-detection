@@ -41,7 +41,10 @@ module2/
 │   ├── config.py              # dataclass Config + load_config từ YAML
 │   ├── dataset.py             # build_dataloaders (ImageFolder train/val/test)
 │   ├── transforms.py          # augmentation & preprocessing pipeline
-│   ├── model.py                # build_model (transfer learning backbone)
+│   ├── models/                 # model architectures (registry pattern)
+│   │   ├── registry.py           # register_model decorator + build_model
+│   │   ├── resnet18.py            # transfer-learning ResNet-18
+│   │   └── simple_cnn.py          # example from-scratch CNN (template)
 │   ├── train.py                # training loop + CLI entrypoint
 │   ├── evaluate.py             # accuracy/precision/recall/f1/confusion matrix
 │   └── utils.py                 # set_seed, checkpoint, EarlyStopping

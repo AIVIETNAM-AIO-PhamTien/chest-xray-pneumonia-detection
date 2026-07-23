@@ -29,16 +29,20 @@ class ModelConfig:
     """Settings related to model architecture.
 
     Attributes:
-        backbone: Name of the torchvision backbone (e.g. "resnet18").
-        pretrained: Whether to load ImageNet-pretrained weights.
+        backbone: Registered model name (see `src/models/`), e.g. "resnet18"
+            or "simple_cnn".
+        pretrained: Whether to load pretrained weights.
         num_classes: Number of output classes.
         freeze_backbone: Whether to freeze all layers except the final head.
+        params: Architecture-specific keyword arguments forwarded to the
+            model builder (e.g. {"img_size": 224} for a ViT).
     """
 
     backbone: str = "resnet18"
     pretrained: bool = True
     num_classes: int = 2
     freeze_backbone: bool = False
+    params: Dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass

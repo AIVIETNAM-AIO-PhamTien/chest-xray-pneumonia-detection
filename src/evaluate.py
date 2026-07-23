@@ -3,7 +3,8 @@
 from typing import Dict
 
 import torch
-from sklearn.metrics import confusion_matrix, f1_score, precision_score, recall_score
+from sklearn.metrics import (confusion_matrix, f1_score, precision_score,
+                             recall_score)
 from torch.utils.data import DataLoader
 
 
@@ -33,7 +34,9 @@ def evaluate(
         all_preds.extend(preds.tolist())
         all_labels.extend(labels.tolist())
 
-    accuracy = sum(p == label for p, label in zip(all_preds, all_labels)) / len(all_labels)
+    accuracy = sum(p == label for p, label in zip(all_preds, all_labels)) / len(
+        all_labels
+    )
 
     return {
         "accuracy": accuracy,

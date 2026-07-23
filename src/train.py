@@ -18,7 +18,7 @@ from torch.utils.data import DataLoader
 from src.config import Config, load_config
 from src.dataset import build_dataloaders
 from src.evaluate import evaluate
-from src.model import build_model
+from src.models import build_model
 from src.utils import EarlyStopping, save_checkpoint, set_seed
 
 logging.basicConfig(
@@ -178,6 +178,7 @@ def _run(cfg: Config, run_name: str) -> None:
         num_classes=cfg.model.num_classes,
         pretrained=cfg.model.pretrained,
         freeze_backbone=cfg.model.freeze_backbone,
+        **cfg.model.params,
     ).to(device)
 
     criterion = nn.CrossEntropyLoss()

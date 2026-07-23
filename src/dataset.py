@@ -35,7 +35,9 @@ def build_dataloaders(
         class name to label index.
     """
     root_dir = Path(root_dir)
-    train_set = ImageFolder(root_dir / "train", transform=get_train_transforms(image_size))
+    train_set = ImageFolder(
+        root_dir / "train", transform=get_train_transforms(image_size)
+    )
     val_set = ImageFolder(root_dir / "val", transform=get_eval_transforms(image_size))
     test_set = ImageFolder(root_dir / "test", transform=get_eval_transforms(image_size))
 

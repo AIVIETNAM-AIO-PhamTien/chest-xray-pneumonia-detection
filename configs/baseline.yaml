@@ -11,6 +11,7 @@ model:
   pretrained: true
   num_classes: 2
   freeze_backbone: false
+  params: {}
 
 train:
   epochs: 10
