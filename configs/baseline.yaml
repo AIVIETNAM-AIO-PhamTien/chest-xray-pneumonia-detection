@@ -18,7 +18,13 @@ train:
   weight_decay: 0.00001
   optimizer: "adam"
   device: "cuda"
+  scheduler: "none"
+  scheduler_params: {}
 
 output:
   checkpoint_dir: "models"
   log_dir: "outputs/logs"
+  run_name: null
+  wandb_project: "chest-xray-pneumonia"
+  wandb_entity: null
+  wandb_mode: "online"

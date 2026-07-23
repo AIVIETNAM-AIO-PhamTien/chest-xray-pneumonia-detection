@@ -8,7 +8,7 @@ Phân loại nhị phân phát hiện viêm phổi (Pneumonia) từ ảnh X-quan
 - **Output**: 2 lớp — `NORMAL` và `PNEUMONIA`.
 - **Dataset**: [Chest X-Ray Images (Pneumonia)](https://www.kaggle.com/datasets/paultimothymooney/chest-xray-pneumonia) (Kaggle: `paultimothymooney/chest-xray-pneumonia`).
 
-Dataset gốc chỉ có 16 ảnh trong `val/`, không đủ để đánh giá tin cậy trong lúc train — pipeline tự chia lại train/val theo tỷ lệ ~85/15 (stratified) từ thư mục `train/` gốc. Lớp `PNEUMONIA` mất cân bằng nhiều hơn `NORMAL` trong tập train.
+Dataset gốc chỉ có 16 ảnh trong `val/`, không đủ để đánh giá tin cậy trong lúc train — pipeline tự chia lại train/val theo tỷ lệ ~80/20 (stratified) từ thư mục `train/` gốc. Lớp `PNEUMONIA` mất cân bằng nhiều hơn `NORMAL` trong tập train.
 
 ## Cấu trúc thư mục
 
@@ -37,7 +37,7 @@ module2/
 
 ## Cài đặt (dev/test local, Windows)
 
-Việc train thực tế chạy trên Google Colab hoặc Kaggle Notebook (GPU miễn phí) — bước cài đặt dưới đây chỉ để viết/test code trên máy trước khi đưa lên đó.
+Việc train thực tế chạy trên Kaggle Notebook (GPU miễn phí) — bước cài đặt dưới đây chỉ để viết/test code trên máy trước khi thực hiện train.
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File setup.ps1
@@ -46,12 +46,11 @@ powershell -ExecutionPolicy Bypass -File setup.ps1
 
 `setup.ps1` tự tạo virtual environment tại `.venv/` và cài `requirements.txt`.
 
-## Train trên Colab / Kaggle
+## Train trên Kaggle
 
 Chi tiết đầy đủ nằm trong [`notebooks/train_baseline.ipynb`](notebooks/train_baseline.ipynb). Tóm tắt các bước:
 
 1. Lấy dataset:
-   - **Colab**: upload `kaggle.json`, chạy `kaggle datasets download -d paultimothymooney/chest-xray-pneumonia`.
    - **Kaggle Notebook**: thêm dataset qua "+ Add Data" (có sẵn tại `/kaggle/input/chest-xray-pneumonia`), nhớ bật **Internet** trong Notebook Settings nếu cần `git clone`.
 2. Clone source code và cài dependencies:
    ```bash

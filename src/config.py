@@ -2,7 +2,7 @@
 
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Union
+from typing import Any, Dict, Optional, Union
 
 import yaml
 
@@ -49,8 +49,12 @@ class TrainConfig:
         epochs: Number of training epochs.
         lr: Learning rate for the optimizer.
         weight_decay: Weight decay (L2 regularization) coefficient.
-        optimizer: Name of the optimizer to use.
+        optimizer: Name of the optimizer to use ("adam", "adamw", or "sgd").
         device: Preferred device ("cuda" or "cpu").
+        scheduler: Name of the LR scheduler to use ("none", "step", "cosine",
+            or "plateau").
+        scheduler_params: Extra keyword arguments forwarded to the scheduler
+            constructor (e.g. {"step_size": 5, "gamma": 0.1} for "step").
     """
 
     epochs: int = 10
@@ -58,19 +62,31 @@ class TrainConfig:
     weight_decay: float = 1e-5
     optimizer: str = "adam"
     device: str = "cuda"
+    scheduler: str = "none"
+    scheduler_params: Dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
 class OutputConfig:
-    """Settings related to checkpoint and log locations.
+    """Settings related to checkpoint, log, and experiment-tracking locations.
 
     Attributes:
         checkpoint_dir: Directory where model checkpoints are saved.
         log_dir: Directory where training logs are saved.
+        run_name: Name for this experiment run, used for the checkpoint
+            filename, log filename, and W&B run name. Defaults to the config
+            file's stem (e.g. "exp_alice_clahe") when not set.
+        wandb_project: W&B project name experiments are logged under.
+        wandb_entity: W&B entity (team/user) to log under, if any.
+        wandb_mode: W&B run mode ("online", "offline", or "disabled").
     """
 
     checkpoint_dir: str = "models"
     log_dir: str = "outputs/logs"
+    run_name: Optional[str] = None
+    wandb_project: str = "chest-xray-pneumonia"
+    wandb_entity: Optional[str] = None
+    wandb_mode: str = "online"
 
 
 @dataclass
