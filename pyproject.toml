@@ -1,0 +1,14 @@
+[tool.black]
+line-length = 88
+
+[tool.isort]
+# Must match black, otherwise `black` and `isort` rewrite each other's output
+# and the pre-commit sequence in README.md never converges.
+profile = "black"
+line_length = 88
+
+[tool.pytest.ini_options]
+# Puts the repo root on sys.path so `from src.x import ...` resolves when
+# tests are run as plain `pytest tests/` (not just `python -m pytest`).
+pythonpath = ["."]
+testpaths = ["tests"]
