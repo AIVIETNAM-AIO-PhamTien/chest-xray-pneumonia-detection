@@ -9,7 +9,7 @@ import torch.nn as nn
 from PIL import Image
 
 from src.config import Config, DataConfig, ModelConfig, OutputConfig, TrainConfig
-from src.train import _run, build_optimizer, build_scheduler
+from src.train import _build_loaders_from_config, _run, build_optimizer, build_scheduler
 from src.utils import EarlyStopping
 
 
@@ -102,6 +102,16 @@ def test_balanced_class_weights_are_applied(tmp_path: Path) -> None:
     cfg = _tiny_config(tmp_path, epochs=1)
     cfg.train.class_weights = "balanced"
     _run(cfg, "unit")
+
+
+def test_build_loaders_from_config_uses_new_data_pipeline(tmp_path: Path) -> None:
+    """Training should be able to build loaders through the new data pipeline."""
+    cfg = _tiny_config(tmp_path, epochs=1)
+    loaders, class_to_idx = _build_loaders_from_config(cfg, "unit")
+
+    assert set(loaders) >= {"train", "val", "test"}
+    assert class_to_idx == {"NORMAL": 0, "PNEUMONIA": 1}
+    assert len(loaders["train"].dataset) > 0
 
 
 def test_unknown_class_weights_rejected(tmp_path: Path) -> None:

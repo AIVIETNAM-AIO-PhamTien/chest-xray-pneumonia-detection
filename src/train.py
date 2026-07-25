@@ -16,6 +16,7 @@ import wandb
 from torch.utils.data import DataLoader
 
 from src.config import Config, load_config
+from src.data import DataLoaderConfig as NewDataLoaderConfig, build_dataloaders as build_new_dataloaders
 from src.dataset import (
     build_dataloaders,
     build_dataloaders_from_manifest,
@@ -157,6 +158,81 @@ def _attach_file_logger(log_dir: Path, run_name: str) -> None:
     logger.addHandler(file_handler)
 
 
+def _build_loaders_from_config(cfg: Config, run_name: str) -> tuple[dict[str, DataLoader], dict[str, int]]:
+    """Build train/val/test loaders for the config using the new data pipeline.
+
+    The new data pipeline is preferred for compatibility with the newer
+    dataset utilities, but the older split-protocol path remains available for
+    backwards compatibility.
+
+    Args:
+        cfg: Fully populated experiment configuration.
+        run_name: Run name used for optional manifest/log outputs.
+
+    Returns:
+        A tuple of (loaders, class_to_idx) matching the older training code.
+    """
+    if cfg.data.protocol == "original":
+        logger.warning(
+            "protocol='original': validating on the published 16-image split"
+        )
+        return build_dataloaders(
+            root_dir=cfg.data.root_dir,
+            image_size=cfg.data.image_size,
+            batch_size=cfg.data.batch_size,
+            num_workers=cfg.data.num_workers,
+        )
+
+    root = find_data_root(cfg.data.root_dir)
+    manifest = make_splits(
+        build_manifest(root),
+        protocol=cfg.data.protocol,
+        val_fraction=cfg.data.val_fraction,
+        seed=cfg.seed,
+    )
+    leaked = count_leaked_groups(manifest)
+    logger.info("Split protocol: %s (root: %s)", cfg.data.protocol, root)
+    logger.info("\n%s", split_summary(manifest).to_string())
+    logger.info("Patient groups spanning >1 split: %d", leaked)
+
+    split_frame = manifest[["path", "class_id", "split"]].rename(
+        columns={"class_id": "label"}
+    )
+    manifest_path = save_manifest(
+        split_frame, Path(cfg.output.log_dir) / f"{run_name}_manifest.csv"
+    )
+    logger.info("Manifest written to %s", manifest_path)
+
+    if cfg.data.protocol in {"a_paper_compatible", "b_patient_grouped"}:
+        config = NewDataLoaderConfig(
+            batch_size=cfg.data.batch_size,
+            img_size=cfg.data.image_size,
+            num_workers=cfg.data.num_workers,
+            seed=cfg.seed,
+            pretrained=cfg.model.pretrained,
+            verify_paths=False,
+        )
+        bundle = build_new_dataloaders(
+            split_csv=manifest_path,
+            root_dir=root,
+            config=config,
+        )
+        loaders = {
+            "train": bundle.train,
+            "val": bundle.val,
+            "test": bundle.test,
+        }
+        class_to_idx = {"NORMAL": 0, "PNEUMONIA": 1}
+        return loaders, class_to_idx
+
+    return build_dataloaders_from_manifest(
+        manifest,
+        image_size=cfg.data.image_size,
+        batch_size=cfg.data.batch_size,
+        num_workers=cfg.data.num_workers,
+    )
+
+
 def _run(cfg: Config, run_name: str) -> None:
     """Run the full training loop for an already-loaded config.
 
@@ -179,41 +255,15 @@ def _run(cfg: Config, run_name: str) -> None:
         config=asdict(cfg),
     )
 
-    if cfg.data.protocol == "original":
-        # Validates on the published 16-image split; kept only to reproduce
-        # the pre-protocol baseline, not for anything reported as a result.
-        logger.warning(
-            "protocol='original': validating on the published 16-image split"
-        )
-        loaders, class_to_idx = build_dataloaders(
-            root_dir=cfg.data.root_dir,
-            image_size=cfg.data.image_size,
-            batch_size=cfg.data.batch_size,
-            num_workers=cfg.data.num_workers,
-        )
-    else:
-        root = find_data_root(cfg.data.root_dir)
+    loaders, class_to_idx = _build_loaders_from_config(cfg, run_name)
+    if cfg.data.protocol != "original":
         manifest = make_splits(
-            build_manifest(root),
+            build_manifest(find_data_root(cfg.data.root_dir)),
             protocol=cfg.data.protocol,
             val_fraction=cfg.data.val_fraction,
             seed=cfg.seed,
         )
-        manifest_path = save_manifest(
-            manifest, Path(cfg.output.log_dir) / f"{run_name}_manifest.csv"
-        )
-        leaked = count_leaked_groups(manifest)
-        logger.info("Split protocol: %s (root: %s)", cfg.data.protocol, root)
-        logger.info("\n%s", split_summary(manifest).to_string())
-        logger.info("Patient groups spanning >1 split: %d", leaked)
-        logger.info("Manifest written to %s", manifest_path)
-        loaders, class_to_idx = build_dataloaders_from_manifest(
-            manifest,
-            image_size=cfg.data.image_size,
-            batch_size=cfg.data.batch_size,
-            num_workers=cfg.data.num_workers,
-        )
-        wandb.log({"split_leaked_groups": leaked}, commit=False)
+        wandb.log({"split_leaked_groups": count_leaked_groups(manifest)}, commit=False)
 
     logger.info("Classes: %s", class_to_idx)
 
