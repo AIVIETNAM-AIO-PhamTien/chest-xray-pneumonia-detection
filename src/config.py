@@ -16,12 +16,21 @@ class DataConfig:
         image_size: Target square size (in pixels) images are resized to.
         batch_size: Number of samples per batch.
         num_workers: Number of worker processes for data loading.
+        protocol: Validation-split protocol (see src/splits.py).
+            "a_paper_compatible" splits image-wise, "b_patient_grouped"
+            splits patient-wise, and "original" uses the published folders
+            as-is -- which means validating on 16 images, so it is kept only
+            for reproducing the old baseline.
+        val_fraction: Fraction of the train+val pool held out for validation.
+            Ignored when protocol is "original".
     """
 
     root_dir: str = "data/raw/chest_xray"
     image_size: int = 224
     batch_size: int = 32
     num_workers: int = 2
+    protocol: str = "b_patient_grouped"
+    val_fraction: float = 0.15
 
 
 @dataclass

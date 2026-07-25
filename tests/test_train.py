@@ -44,7 +44,17 @@ def _tiny_config(tmp_path: Path, epochs: int = 3) -> Config:
     _make_tree(root, {"NORMAL": 2, "PNEUMONIA": 6})
     return Config(
         seed=0,
-        data=DataConfig(root_dir=str(root), image_size=32, batch_size=4, num_workers=0),
+        # protocol="original" keeps these tests on the ImageFolder path so
+        # they stay focused on the loop itself (checkpointing, class weights,
+        # early stopping). The split protocols are covered in test_splits.py,
+        # which needs far more patient groups than this fixture has.
+        data=DataConfig(
+            root_dir=str(root),
+            image_size=32,
+            batch_size=4,
+            num_workers=0,
+            protocol="original",
+        ),
         model=ModelConfig(name="simple_cnn", pretrained=False, num_classes=2),
         train=TrainConfig(epochs=epochs, lr=1e-3, device="cpu"),
         output=OutputConfig(

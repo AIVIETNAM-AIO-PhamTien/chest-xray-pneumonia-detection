@@ -16,9 +16,21 @@ import wandb
 from torch.utils.data import DataLoader
 
 from src.config import Config, load_config
-from src.dataset import build_dataloaders, compute_class_weights
+from src.dataset import (
+    build_dataloaders,
+    build_dataloaders_from_manifest,
+    compute_class_weights,
+    find_data_root,
+)
 from src.evaluate import evaluate
 from src.models import build_model
+from src.splits import (
+    build_manifest,
+    count_leaked_groups,
+    make_splits,
+    save_manifest,
+    split_summary,
+)
 from src.utils import EarlyStopping, resolve_device, save_checkpoint, set_seed
 
 logging.basicConfig(
@@ -167,12 +179,42 @@ def _run(cfg: Config, run_name: str) -> None:
         config=asdict(cfg),
     )
 
-    loaders, class_to_idx = build_dataloaders(
-        root_dir=cfg.data.root_dir,
-        image_size=cfg.data.image_size,
-        batch_size=cfg.data.batch_size,
-        num_workers=cfg.data.num_workers,
-    )
+    if cfg.data.protocol == "original":
+        # Validates on the published 16-image split; kept only to reproduce
+        # the pre-protocol baseline, not for anything reported as a result.
+        logger.warning(
+            "protocol='original': validating on the published 16-image split"
+        )
+        loaders, class_to_idx = build_dataloaders(
+            root_dir=cfg.data.root_dir,
+            image_size=cfg.data.image_size,
+            batch_size=cfg.data.batch_size,
+            num_workers=cfg.data.num_workers,
+        )
+    else:
+        root = find_data_root(cfg.data.root_dir)
+        manifest = make_splits(
+            build_manifest(root),
+            protocol=cfg.data.protocol,
+            val_fraction=cfg.data.val_fraction,
+            seed=cfg.seed,
+        )
+        manifest_path = save_manifest(
+            manifest, Path(cfg.output.log_dir) / f"{run_name}_manifest.csv"
+        )
+        leaked = count_leaked_groups(manifest)
+        logger.info("Split protocol: %s (root: %s)", cfg.data.protocol, root)
+        logger.info("\n%s", split_summary(manifest).to_string())
+        logger.info("Patient groups spanning >1 split: %d", leaked)
+        logger.info("Manifest written to %s", manifest_path)
+        loaders, class_to_idx = build_dataloaders_from_manifest(
+            manifest,
+            image_size=cfg.data.image_size,
+            batch_size=cfg.data.batch_size,
+            num_workers=cfg.data.num_workers,
+        )
+        wandb.log({"split_leaked_groups": leaked}, commit=False)
+
     logger.info("Classes: %s", class_to_idx)
 
     model = build_model(
@@ -327,6 +369,17 @@ def main() -> None:
         "--epochs", type=int, default=None, help="Override cfg.train.epochs."
     )
     parser.add_argument("--lr", type=float, default=None, help="Override cfg.train.lr.")
+    parser.add_argument(
+        "--protocol",
+        type=str,
+        default=None,
+        choices=["a_paper_compatible", "b_patient_grouped", "original"],
+        help="Override cfg.data.protocol.",
+    )
+    parser.add_argument("--seed", type=int, default=None, help="Override cfg.seed.")
+    parser.add_argument(
+        "--run-name", type=str, default=None, help="Override cfg.output.run_name."
+    )
     args = parser.parse_args()
 
     cfg = load_config(args.config)
@@ -342,6 +395,12 @@ def main() -> None:
         cfg.train.epochs = args.epochs
     if args.lr is not None:
         cfg.train.lr = args.lr
+    if args.protocol is not None:
+        cfg.data.protocol = args.protocol
+    if args.seed is not None:
+        cfg.seed = args.seed
+    if args.run_name is not None:
+        cfg.output.run_name = args.run_name
 
     run_name = cfg.output.run_name or Path(args.config).stem
     _run(cfg, run_name)
