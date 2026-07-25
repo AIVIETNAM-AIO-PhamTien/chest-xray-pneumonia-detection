@@ -1,16 +1,16 @@
+# Runtime
 torch>=2.0.0
 torchvision>=0.15.0
-wandb
 numpy
 pandas
 scikit-learn
 matplotlib
-seaborn
 pillow
 pyyaml
 tqdm
-opencv-python
-kaggle
+wandb
+
+# Dev / QA
 black
 isort
 flake8
