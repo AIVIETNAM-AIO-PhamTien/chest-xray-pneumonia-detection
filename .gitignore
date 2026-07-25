@@ -27,3 +27,6 @@ wandb/
 # OS
 .DS_Store
 Thumbs.db
+
+# Kết quả chạy notebook (checkpoint, manifest, log)
+notebooks/output/
