@@ -5,6 +5,37 @@ Baseline hiện tại dùng ResNet18 pretrained ImageNet; repo cũng có `Simple
 làm mẫu cho model train-from-scratch. ResNet34 và các kiến trúc khác nằm trong
 roadmap, chưa được đăng ký trong code hiện tại.
 
+## Bắt đầu từ đâu
+
+| Muốn gì | Đi đâu |
+|---|---|
+| Chạy baseline + Grad-CAM trên Kaggle | [`notebooks/baseline_kaggle.ipynb`](notebooks/baseline_kaggle.ipynb) — độc lập hoàn toàn, không cần clone repo, copy vào Kaggle là chạy |
+| Hiểu dataset trước khi tin số | `python -m scripts.audit_dataset --root-dir <path>` |
+| Biết vì sao có hai protocol split | [`src/splits.py`](src/splits.py) và [`docs/README.md`](docs/README.md) |
+| Tài liệu nền + review paper | [`docs/`](docs/) |
+
+## Protocol split
+
+Val gốc chỉ 16 ảnh nên không chọn checkpoint trên đó được. Hai protocol dưới đây
+đều **giữ nguyên test split gốc** làm holdout; chỉ ranh giới train/val đổi:
+
+| Protocol | Cắt val | Kết quả đo được |
+|---|---|---|
+| `a_paper_compatible` | mức **ảnh** | 239 bệnh nhân nằm cả hai bên train/val |
+| `b_patient_grouped` | mức **bệnh nhân** | 0 — đây là default |
+
+Chênh lệch giữa hai bên đo đúng mức mà split theo ảnh thổi phồng validation metric.
+Báo cáo số chính từ protocol B; số protocol A chỉ dùng để so với literature và
+phải ghi rõ nhãn.
+
+```bash
+python -m src.train --config configs/protocol_b.yaml --root-dir ../chest_xray
+python -m src.train --config configs/protocol_a.yaml --root-dir ../chest_xray
+```
+
+Mỗi run ghi manifest ra `outputs/logs/<run>_manifest.csv` để truy ngược được đúng
+danh sách file đứng sau từng con số.
+
 ## Bài toán
 
 - **Input**: ảnh X-quang ngực (grayscale, được convert 3 kênh cho backbone pretrained).
@@ -140,15 +171,17 @@ test set; chưa load lại best weights trước khi test.
 
 ## Giới hạn baseline hiện tại
 
-- Validation dùng 16 ảnh gốc nên metric có phương sai lớn.
-- Loss đang là `CrossEntropyLoss()` không có class weight hoặc weighted sampler.
 - `set_seed()` seed Python, NumPy và PyTorch nhưng chưa bật chế độ deterministic
-  đầy đủ trên GPU.
+  đầy đủ trên GPU, nên chưa tái lập bit-for-bit.
+- Mới chạy một seed. Muốn kết luận kiến trúc nào hơn thì cần 3–5 seed và báo cáo
+  khoảng dao động.
 - Nếu dùng scheduler `plateau` để theo dõi validation F1, cần đặt
   `scheduler_params.mode: "max"`; mặc định của PyTorch là `"min"`.
 - `freeze_backbone: true` trên ResNet18 tắt gradient của backbone, nhưng
   BatchNorm running statistics vẫn có thể thay đổi khi model ở train mode.
 - `SimpleCNN` chấp nhận nhưng bỏ qua hai cờ `pretrained` và `freeze_backbone`.
+- `protocol: "original"` vẫn validate trên 16 ảnh gốc — chỉ giữ để tái hiện
+  baseline cũ, không dùng cho số đưa vào report.
 
 ## Chuẩn code
 

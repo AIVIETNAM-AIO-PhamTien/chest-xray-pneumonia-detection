@@ -3,8 +3,7 @@
 from typing import Dict
 
 import torch
-from sklearn.metrics import (confusion_matrix, f1_score, precision_score,
-                             recall_score)
+from sklearn.metrics import confusion_matrix, f1_score, precision_score, recall_score
 from torch.utils.data import DataLoader
 
 

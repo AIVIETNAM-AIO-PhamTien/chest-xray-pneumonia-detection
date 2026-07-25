@@ -16,12 +16,21 @@ class DataConfig:
         image_size: Target square size (in pixels) images are resized to.
         batch_size: Number of samples per batch.
         num_workers: Number of worker processes for data loading.
+        protocol: Validation-split protocol (see src/splits.py).
+            "a_paper_compatible" splits image-wise, "b_patient_grouped"
+            splits patient-wise, and "original" uses the published folders
+            as-is -- which means validating on 16 images, so it is kept only
+            for reproducing the old baseline.
+        val_fraction: Fraction of the train+val pool held out for validation.
+            Ignored when protocol is "original".
     """
 
     root_dir: str = "data/raw/chest_xray"
     image_size: int = 224
     batch_size: int = 32
     num_workers: int = 2
+    protocol: str = "b_patient_grouped"
+    val_fraction: float = 0.15
 
 
 @dataclass
@@ -54,11 +63,19 @@ class TrainConfig:
         lr: Learning rate for the optimizer.
         weight_decay: Weight decay (L2 regularization) coefficient.
         optimizer: Name of the optimizer to use ("adam", "adamw", or "sgd").
-        device: Preferred device ("cuda" or "cpu").
+        device: Preferred device ("cuda", "mps", or "cpu"). Falls back to CPU
+            when the requested accelerator is unavailable.
         scheduler: Name of the LR scheduler to use ("none", "step", "cosine",
             or "plateau").
         scheduler_params: Extra keyword arguments forwarded to the scheduler
             constructor (e.g. {"step_size": 5, "gamma": 0.1} for "step").
+        class_weights: How to weight the loss across classes. "none" leaves
+            CrossEntropyLoss unweighted; "balanced" weights each class by
+            the inverse of its frequency in the training split. The dataset
+            is roughly 2.9:1 PNEUMONIA:NORMAL, so "balanced" is the honest
+            default for anything reported as a result.
+        early_stopping_patience: Epochs to wait for a validation F1
+            improvement before stopping.
     """
 
     epochs: int = 10
@@ -68,6 +85,8 @@ class TrainConfig:
     device: str = "cuda"
     scheduler: str = "none"
     scheduler_params: Dict[str, Any] = field(default_factory=dict)
+    class_weights: str = "balanced"
+    early_stopping_patience: int = 5
 
 
 @dataclass

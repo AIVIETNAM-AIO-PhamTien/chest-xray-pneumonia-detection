@@ -1,11 +1,12 @@
+# Protocol A — see src/splits.py for what this changes.
 seed: 42
 
 data:
-  root_dir: "data/raw/chest_xray"
+  root_dir: "data/raw"          # searched recursively; override with --root-dir
   image_size: 224
   batch_size: 32
   num_workers: 2
-  protocol: "original"   # published 16-image val split; see src/splits.py
+  protocol: "a_paper_compatible"
   val_fraction: 0.15
 
 model:
@@ -16,20 +17,20 @@ model:
   params: {}
 
 train:
-  epochs: 10
+  epochs: 15
   lr: 0.0001
   weight_decay: 0.00001
   optimizer: "adam"
-  device: "cuda"           # falls back to mps/cpu when unavailable
-  scheduler: "none"
-  scheduler_params: {}
-  class_weights: "balanced"  # train split is ~2.9:1 PNEUMONIA:NORMAL
+  device: "cuda"
+  scheduler: "plateau"
+  scheduler_params: {mode: "max", factor: 0.3, patience: 2}
+  class_weights: "balanced"
   early_stopping_patience: 5
 
 output:
   checkpoint_dir: "models"
   log_dir: "outputs/logs"
-  run_name: null
+  run_name: "resnet18_a"
   wandb_project: "chest-xray-pneumonia"
   wandb_entity: null
-  wandb_mode: "online"
+  wandb_mode: "disabled"

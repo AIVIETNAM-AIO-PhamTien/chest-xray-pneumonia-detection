@@ -20,13 +20,38 @@ def set_seed(seed: int = 42) -> None:
     torch.cuda.manual_seed_all(seed)
 
 
+def resolve_device(preferred: str = "cuda") -> torch.device:
+    """Resolve a configured device name to a device that actually exists.
+
+    Falls back to CPU when the requested accelerator is unavailable, so a
+    config written for a GPU box still runs on a laptop. Unlike a plain
+    ``cuda``-only check, an explicit "mps" request is honoured on Apple
+    silicon instead of silently degrading to CPU.
+
+    Args:
+        preferred: Device name from the config ("cuda", "mps", or "cpu").
+
+    Returns:
+        A torch.device that is available on this machine.
+    """
+    if preferred.startswith("cuda") and torch.cuda.is_available():
+        return torch.device(preferred)
+    if preferred == "mps" and torch.backends.mps.is_available():
+        return torch.device("mps")
+    return torch.device("cpu")
+
+
 def get_device() -> torch.device:
-    """Return the best available device (CUDA if present, else CPU).
+    """Return the best available device (CUDA, then MPS, then CPU).
 
     Returns:
         A torch.device instance representing the selected device.
     """
-    return torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    if torch.cuda.is_available():
+        return torch.device("cuda")
+    if torch.backends.mps.is_available():
+        return torch.device("mps")
+    return torch.device("cpu")
 
 
 def save_checkpoint(
