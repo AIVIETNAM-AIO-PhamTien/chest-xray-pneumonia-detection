@@ -18,9 +18,11 @@ train:
   lr: 0.0001
   weight_decay: 0.00001
   optimizer: "adam"
-  device: "cuda"
+  device: "cuda"           # falls back to mps/cpu when unavailable
   scheduler: "none"
   scheduler_params: {}
+  class_weights: "balanced"  # train split is ~2.9:1 PNEUMONIA:NORMAL
+  early_stopping_patience: 5
 
 output:
   checkpoint_dir: "models"

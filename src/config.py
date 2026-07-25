@@ -54,11 +54,19 @@ class TrainConfig:
         lr: Learning rate for the optimizer.
         weight_decay: Weight decay (L2 regularization) coefficient.
         optimizer: Name of the optimizer to use ("adam", "adamw", or "sgd").
-        device: Preferred device ("cuda" or "cpu").
+        device: Preferred device ("cuda", "mps", or "cpu"). Falls back to CPU
+            when the requested accelerator is unavailable.
         scheduler: Name of the LR scheduler to use ("none", "step", "cosine",
             or "plateau").
         scheduler_params: Extra keyword arguments forwarded to the scheduler
             constructor (e.g. {"step_size": 5, "gamma": 0.1} for "step").
+        class_weights: How to weight the loss across classes. "none" leaves
+            CrossEntropyLoss unweighted; "balanced" weights each class by
+            the inverse of its frequency in the training split. The dataset
+            is roughly 2.9:1 PNEUMONIA:NORMAL, so "balanced" is the honest
+            default for anything reported as a result.
+        early_stopping_patience: Epochs to wait for a validation F1
+            improvement before stopping.
     """
 
     epochs: int = 10
@@ -68,6 +76,8 @@ class TrainConfig:
     device: str = "cuda"
     scheduler: str = "none"
     scheduler_params: Dict[str, Any] = field(default_factory=dict)
+    class_weights: str = "balanced"
+    early_stopping_patience: int = 5
 
 
 @dataclass

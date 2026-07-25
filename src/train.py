@@ -16,10 +16,10 @@ import wandb
 from torch.utils.data import DataLoader
 
 from src.config import Config, load_config
-from src.dataset import build_dataloaders
+from src.dataset import build_dataloaders, compute_class_weights
 from src.evaluate import evaluate
 from src.models import build_model
-from src.utils import EarlyStopping, save_checkpoint, set_seed
+from src.utils import EarlyStopping, resolve_device, save_checkpoint, set_seed
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s"
@@ -61,7 +61,7 @@ def build_optimizer(
 
 def build_scheduler(
     name: str, optimizer: torch.optim.Optimizer, params: Dict[str, Any]
-) -> Optional[torch.optim.lr_scheduler._LRScheduler]:
+) -> Optional[object]:
     """Build an LR scheduler by name.
 
     Args:
@@ -71,7 +71,9 @@ def build_scheduler(
             constructor.
 
     Returns:
-        A configured scheduler instance, or None if name is "none".
+        A configured scheduler instance, or None if name is "none". Note that
+        ReduceLROnPlateau does not share a base class with the other
+        schedulers, hence the loose return type.
 
     Raises:
         ValueError: If an unsupported scheduler name is given.
@@ -154,8 +156,8 @@ def _run(cfg: Config, run_name: str) -> None:
     set_seed(cfg.seed)
     _attach_file_logger(Path(cfg.output.log_dir), run_name)
 
-    device = torch.device(cfg.train.device if torch.cuda.is_available() else "cpu")
-    logger.info("Using device: %s", device)
+    device = resolve_device(cfg.train.device)
+    logger.info("Using device: %s (requested: %s)", device, cfg.train.device)
 
     wandb.init(
         project=cfg.output.wandb_project,
@@ -181,7 +183,18 @@ def _run(cfg: Config, run_name: str) -> None:
         **cfg.model.params,
     ).to(device)
 
-    criterion = nn.CrossEntropyLoss()
+    if cfg.train.class_weights == "balanced":
+        weights = compute_class_weights(loaders["train"].dataset).to(device)
+        logger.info("Class weights (balanced): %s", weights.tolist())
+        criterion = nn.CrossEntropyLoss(weight=weights)
+    elif cfg.train.class_weights == "none":
+        criterion = nn.CrossEntropyLoss()
+    else:
+        raise ValueError(
+            f"Unsupported class_weights: {cfg.train.class_weights!r}. "
+            'Use "balanced" or "none".'
+        )
+
     optimizer = build_optimizer(
         cfg.train.optimizer,
         model.parameters(),
@@ -191,9 +204,14 @@ def _run(cfg: Config, run_name: str) -> None:
     scheduler = build_scheduler(
         cfg.train.scheduler, optimizer, cfg.train.scheduler_params
     )
-    early_stopping = EarlyStopping(patience=5)
+    early_stopping = EarlyStopping(patience=cfg.train.early_stopping_patience)
 
-    best_f1 = 0.0
+    # -1.0 rather than 0.0 so epoch 1 always writes a checkpoint. With 0.0, a
+    # run whose validation F1 never exceeded 0 produced no checkpoint at all
+    # and the test phase below would have nothing to load.
+    best_f1 = -1.0
+    best_epoch = 0
+    checkpoint_path: Optional[Path] = None
     for epoch in range(1, cfg.train.epochs + 1):
         train_loss = train_one_epoch(
             model, loaders["train"], optimizer, criterion, device
@@ -228,7 +246,8 @@ def _run(cfg: Config, run_name: str) -> None:
 
         if val_metrics["f1"] > best_f1:
             best_f1 = val_metrics["f1"]
-            save_checkpoint(
+            best_epoch = epoch
+            checkpoint_path = save_checkpoint(
                 model, cfg.output.checkpoint_dir, filename=f"{run_name}_best.pth"
             )
 
@@ -237,10 +256,31 @@ def _run(cfg: Config, run_name: str) -> None:
             logger.info("Early stopping triggered at epoch %d", epoch)
             break
 
+    # Restore the best-validation weights before touching the test set.
+    # Without this the reported test metrics belong to the last epoch, which
+    # with early stopping is up to `patience` epochs past the selected model.
+    if checkpoint_path is not None:
+        model.load_state_dict(torch.load(checkpoint_path, map_location=device))
+        logger.info(
+            "Restored best checkpoint from epoch %d (val_f1: %.4f) for testing",
+            best_epoch,
+            best_f1,
+        )
+    else:
+        logger.warning("No checkpoint was saved; testing last-epoch weights")
+
     test_metrics = evaluate(model, loaders["test"], device)
     logger.info("Test metrics: %s", test_metrics)
     wandb.log(
-        {f"test_{k}": v for k, v in test_metrics.items() if k != "confusion_matrix"}
+        {
+            **{
+                f"test_{k}": v
+                for k, v in test_metrics.items()
+                if k != "confusion_matrix"
+            },
+            "best_epoch": best_epoch,
+            "best_val_f1": best_f1,
+        }
     )
     wandb.finish()
 
