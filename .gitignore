@@ -43,3 +43,7 @@ notebooks/results_v4/manifest_fold*.csv
 notebooks/results_v4/predictions_benchmark_per_fold.csv
 notebooks/results_v4/nuisance_feature_manifest.csv
 notebooks/results_v4/results_resolution_pilot_proxies.csv
+
+# Gói đọc phim: ảnh bệnh nhân + khóa giải mù, không đưa lên git
+clinical_review_package/images/
+clinical_review_package/private/
