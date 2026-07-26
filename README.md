@@ -9,10 +9,36 @@ roadmap, chưa được đăng ký trong code hiện tại.
 
 | Muốn gì | Đi đâu |
 |---|---|
-| Chạy baseline + Grad-CAM trên Kaggle | [`notebooks/baseline_kaggle.ipynb`](notebooks/baseline_kaggle.ipynb) — độc lập hoàn toàn, không cần clone repo, copy vào Kaggle là chạy |
+| Chạy baseline trên Kaggle hoặc MacBook | [`notebooks/baseline_kaggle.ipynb`](notebooks/baseline_kaggle.ipynb) — tự nhận CUDA/MPS/CPU, có smoke/full mode |
+| Xem kết quả lần chạy đầy đủ mới nhất | [`notebooks/results_v4/`](notebooks/results_v4/) và [`notebooks/result/train_log_v4.txt`](notebooks/result/train_log_v4.txt) |
+| Kiểm định ghép cặp giữa các cấu hình | `python scripts/paired_factorial_tests.py` và `paired_shortcut_reliance.py` |
 | Hiểu dataset trước khi tin số | `python -m scripts.audit_dataset --root-dir <path>` |
 | Biết vì sao có hai protocol split | [`src/splits.py`](src/splits.py) và [`docs/README.md`](docs/README.md) |
 | Tài liệu nền + review paper | [`docs/`](docs/) |
+
+## Kết quả hiện tại và cảnh báo quan trọng
+
+Lần chạy đầy đủ gần nhất: 8 thí nghiệm × 5 fold, 79,1 phút trên Tesla T4.
+
+Cấu hình được OOF chọn là `resnet18` + letterbox + augment nhẹ. Trên test nó đạt
+group AUC 0,949 và **độ đặc hiệu chỉ 67,1%** — bắt được 202/203 ca viêm phổi
+nhưng báo nhầm 74/225 ca bình thường.
+
+Ba điều cần biết trước khi dùng lại con số nào ở đây:
+
+**Tập test không còn là holdout nguyên vẹn.** Nó đã được đọc từ lần chạy v2, và
+chính độ đặc hiệu thấp trên nó sinh ra hướng nghiên cứu hiện tại. Repo gọi nó là
+*known benchmark test*; mọi số trên nó là ước lượng **lạc quan**.
+
+**OOF gần như không phân biệt được cấu hình.** Biên độ group AUC giữa 7 cấu hình
+thật chỉ 0,0014, trong khi biên độ trên test là 0,0290 — rộng gấp 21 lần. Tệ hơn,
+trong 4 ô của thiết kế 2×2 thì thứ hạng gần như đảo ngược (Spearman −0,80): cấu
+hình thắng OOF lại đứng cuối trên test. Chia theo group chặn được rò rỉ danh
+tính nhưng **không** chặn được rò rỉ kiểu chụp.
+
+**Tỉ lệ khung ảnh một mình đã phân loại được.** Không cần mô hình nào, AUC đạt
+0,865 trên train và 0,704 trên test. Mạnh trên train hơn test đúng là hình dạng
+của một đặc trưng tắt.
 
 ## Protocol split
 
@@ -42,11 +68,11 @@ danh sách file đứng sau từng con số.
 - **Output**: 2 lớp — `NORMAL` và `PNEUMONIA`.
 - **Dataset**: [Chest X-Ray Images (Pneumonia)](https://www.kaggle.com/datasets/paultimothymooney/chest-xray-pneumonia) (Kaggle: `paultimothymooney/chest-xray-pneumonia`).
 
-Dataset gốc chỉ có 16 ảnh trong `val/` (8 ảnh mỗi lớp), không đủ để đánh giá
-tin cậy trong lúc train. Pipeline hiện tại **dùng trực tiếp** ba thư mục
-`train/`, `val/`, `test/`; chưa tự chia lại train/val. Vì vậy validation metric
-và việc chọn checkpoint của baseline chỉ mang tính sơ bộ. Lớp `PNEUMONIA`
-trong tập train cũng nhiều hơn `NORMAL` đáng kể.
+Dataset gốc chỉ có 16 ảnh trong `val/` (8 ảnh mỗi lớp), không đủ để chọn
+checkpoint. Notebook canonical gộp original `train+val` thành development pool,
+chia lại bằng `StratifiedGroupKFold` theo filename-derived group, và chỉ đọc
+test sau khi đã khóa cấu hình bằng OOF validation. Test không tham gia vào việc
+chọn checkpoint, chọn cấu hình hay chọn ngưỡng.
 
 Các transform luôn chuyển ảnh đầu vào về grayscale rồi nhân thành 3 kênh để
 phù hợp với backbone pretrained, kể cả khi file nguồn đã được lưu ở chế độ RGB.
@@ -61,7 +87,11 @@ chest-xray-pneumonia-detection/
 │   ├── raw/                  # dataset gốc tải từ Kaggle (gitignored)
 │   └── processed/            # dữ liệu đã qua tiền xử lý (gitignored)
 ├── notebooks/
-│   └── train_baseline.ipynb  # notebook chạy trên Colab/Kaggle
+│   ├── baseline_kaggle.ipynb # notebook canonical, chạy Kaggle/Mac
+│   ├── baseline-kaggle-...   # các bản đã chạy kèm output, giữ làm bằng chứng
+│   ├── result/               # train_log của từng lần chạy
+│   ├── results_v4/           # CSV/JSON của lần chạy đầy đủ mới nhất
+│   └── train_baseline.ipynb  # notebook CLI cũ
 ├── src/
 │   ├── config.py              # dataclass Config + load_config từ YAML
 │   ├── dataset.py             # build_dataloaders (ImageFolder train/val/test)
@@ -87,35 +117,29 @@ powershell -ExecutionPolicy Bypass -File setup.ps1
 
 `setup.ps1` tự tạo virtual environment tại `.venv/` và cài `requirements.txt`.
 
-## Train trên Kaggle
+## Chạy notebook trên Kaggle hoặc MacBook
 
-Chi tiết đầy đủ nằm trong [`notebooks/train_baseline.ipynb`](notebooks/train_baseline.ipynb). Tóm tắt các bước:
+Chi tiết nằm trong [`notebooks/baseline_kaggle.ipynb`](notebooks/baseline_kaggle.ipynb).
 
-1. Lấy dataset:
-   - **Kaggle Notebook**: thêm dataset qua "+ Add Data", nhớ bật **Internet** trong Notebook Settings nếu cần `git clone`.
-2. Clone source code và cài dependencies:
-   ```bash
-   git clone https://github.com/AIVIETNAM-AIO-PhamTien/chest-xray-pneumonia-detection.git
-   cd chest-xray-pneumonia-detection
-   pip install -r requirements.txt
-   ```
-3. Xác định thư mục chứa trực tiếp `train/`, `val/`, `test/`. Đường dẫn mount
-   trên Kaggle có thể thay đổi theo cách dataset được thêm; hãy kiểm tra thay vì
-   giả định một đường dẫn cố định. Giá trị `data.root_dir` trong config là
-   placeholder cho layout local. Có thể giữ nguyên config và truyền override:
-   ```python
-   !python -m src.train \
-       --config configs/baseline.yaml \
-       --root-dir "/kaggle/input/.../chest_xray" \
-       --wandb-mode disabled
-   ```
-4. Khi validation F1 tăng và lớn hơn `0`, weights tốt nhất được lưu tại
-   `models/baseline_best.pth`.
+- **Kaggle:** Add Data `paultimothymooney/chest-xray-pneumonia`, bật GPU T4 và
+  Internet. `RUN_MODE="auto"` chọn full; nên chạy `smoke` trước rồi mới đổi sang
+  `full`.
+- **MacBook:** mở notebook từ repo; nó tự tìm dataset sibling `../chest_xray`,
+  chọn MPS nếu khả dụng và mặc định chạy smoke. Có thể đặt đường dẫn rõ ràng bằng
+  `DATA_ROOT_OVERRIDE` hoặc biến môi trường `CXR_DATA_ROOT`.
+- Full run gồm 8 thí nghiệm × 5 fold × tối đa 15 epoch, khoảng 80 phút trên T4.
+  Dùng **Save Version → Save & Run All**; chạy interactive sẽ bị ngắt vì giới hạn
+  idle 20 phút. Mac phù hợp để audit dữ liệu và smoke test.
+- Smoke chạy 2 cấu hình nhỏ đi qua cả hai chế độ resize, nên nó kiểm tra được
+  đường code mà chỉ full run mới dùng tới.
 
-Cũng có thể chạy trực tiếp qua CLI:
+Output local nằm trong `artifacts/notebook_rerun/`; trên Kaggle nằm trong
+`/kaggle/working`. Checkpoint `.pth` không được commit — `train_log.txt` và
+`resolved_config.json` đủ để tái tạo.
 
 ```bash
-python -m src.train --config configs/baseline.yaml
+python -m pip install -r requirements-notebook.txt
+python -m jupyter lab notebooks/baseline_kaggle.ipynb
 ```
 
 ## Config baseline

@@ -1,0 +1,110 @@
+{
+  "run_mode": "full",
+  "seed": 42,
+  "image_cache_size": 224,
+  "batch_size": 32,
+  "epochs": 15,
+  "learning_rate": 0.0001,
+  "weight_decay": 1e-05,
+  "patience": 5,
+  "n_folds": 5,
+  "val_fraction": 0.15,
+  "deterministic": true,
+  "threshold_objective": "sensitivity",
+  "target_sensitivity": 0.97,
+  "bootstrap_reps": 2000,
+  "augment_presets": {
+    "nhe": {
+      "rotation": 10,
+      "scale": 0.0,
+      "translate": 0.0,
+      "jitter": 0.15
+    },
+    "manh": {
+      "rotation": 30,
+      "scale": 0.2,
+      "translate": 0.1,
+      "jitter": 0.2
+    }
+  },
+  "experiments": [
+    {
+      "name": "resnet18",
+      "arch": "resnet18",
+      "size": 224,
+      "aug": "nhe",
+      "balancing": "weighted",
+      "resize": "letterbox",
+      "hoi": "baseline; giữ tỉ lệ bằng đệm viền"
+    },
+    {
+      "name": "stretch_nhe",
+      "arch": "resnet18",
+      "size": 224,
+      "aug": "nhe",
+      "balancing": "weighted",
+      "resize": "stretch",
+      "hoi": "ép vuông đổi cách mã hóa tỉ lệ khung, có đổi lỗi FP không?"
+    },
+    {
+      "name": "augment_manh",
+      "arch": "resnet18",
+      "size": 224,
+      "aug": "manh",
+      "balancing": "weighted",
+      "resize": "letterbox",
+      "hoi": "augment mạnh có thu hẹp khoảng cách OOF→test?"
+    },
+    {
+      "name": "stretch_manh",
+      "arch": "resnet18",
+      "size": 224,
+      "aug": "manh",
+      "balancing": "weighted",
+      "resize": "stretch",
+      "hoi": "augment mạnh có bù được biến dạng do ép vuông?"
+    },
+    {
+      "name": "khong_weight",
+      "arch": "resnet18",
+      "size": 224,
+      "aug": "nhe",
+      "balancing": "none",
+      "resize": "letterbox",
+      "hoi": "trọng số lớp có cần không?"
+    },
+    {
+      "name": "anh_128",
+      "arch": "resnet18",
+      "size": 128,
+      "aug": "nhe",
+      "balancing": "weighted",
+      "resize": "letterbox",
+      "hoi": "128px có mất gì so với 224px?"
+    },
+    {
+      "name": "densenet121",
+      "arch": "densenet121",
+      "size": 224,
+      "aug": "nhe",
+      "balancing": "weighted",
+      "resize": "letterbox",
+      "hoi": "mô hình lớn hơn có hơn không?"
+    },
+    {
+      "name": "cnn_tu_dau",
+      "arch": "small_cnn",
+      "size": 150,
+      "aug": "manh",
+      "balancing": "none",
+      "resize": "letterbox",
+      "hoi": "tái hiện CNN 150px train từ đầu"
+    }
+  ],
+  "factorial_names": [
+    "resnet18",
+    "stretch_nhe",
+    "augment_manh",
+    "stretch_manh"
+  ]
+}
