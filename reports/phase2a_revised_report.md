@@ -14,10 +14,12 @@ python3 scripts/nuisance_domain_models.py
 
 ## Tóm tắt
 
-Ảnh NORMAL trong tập train được lưu ở mức nén JPEG thấp hơn hẳn mọi nhóm còn
-lại — khoảng 3,1 lần dung lượng trên mỗi megapixel. Ảnh NORMAL trong tập test
-thì không. Chênh lệch này nhìn thấy được trong pixel, tách hai lớp trong
-development gần như hoàn hảo, và biến mất hoàn toàn ở benchmark.
+Ảnh NORMAL trong tập train được lưu ở **JPEG quality 95,5**; mọi nhóm còn lại —
+kể cả NORMAL trong tập test — ở **quality 75,0**. Xác nhận trực tiếp từ bảng
+lượng tử hóa trong header, không phải suy ra từ dung lượng file.
+
+Chênh lệch này nhìn thấy được trong pixel, tách hai lớp trong development gần
+như hoàn hảo, và biến mất hoàn toàn ở benchmark.
 
 Một cơ chế duy nhất giải thích mọi quan sát của dự án.
 
@@ -54,9 +56,47 @@ nhiên.
 
 Chỉ 5/41 feature qua cổng sàng lọc. Họ photometry không có feature nào.
 
-## Kiểm chứng độc lập, đọc thẳng từ đĩa
+## Kiểm chứng ở cấp header JPEG
 
-Không qua code trích feature của tôi:
+Dung lượng trên mỗi pixel **không** tự chứng minh chất lượng nén khác nhau — nó
+còn phụ thuộc entropy nội dung, nhiễu cảm biến và độ sắc nét. Bảng lượng tử hóa
+thì khác: nó là thiết lập của bộ mã hóa, nằm trong file, không phụ thuộc ảnh.
+
+| Thư mục | n | Quality ước lượng | p25–p75 | qtable phổ biến nhất |
+|---|---:|---:|---|---|
+| **train/NORMAL** | 1.341 | **95,5** | 95,5–95,5 | `bc79aa8c5699` (96,9%) |
+| train/PNEUMONIA | 3.875 | 75,0 | 75,0–75,0 | `5fe3e571bb5a` (89,3%) |
+| test/NORMAL | 234 | 75,0 | 75,0–75,0 | `5fe3e571bb5a` (100%) |
+| test/PNEUMONIA | 390 | 75,0 | 75,0–75,0 | `5fe3e571bb5a` (90,3%) |
+
+Bảng thực tế, góc 4×4 trên-trái (hệ số nhỏ = nén ít):
+
+```
+train/NORMAL      [[1 1 1 2]     tổng 64 hệ số =  330
+                   [1 1 1 2]
+                   [1 1 2 3]
+                   [2 2 3 4]]
+
+mọi nhóm khác     [[8 6 5 8]     tổng 64 hệ số = 1858
+                   [6 6 7 10]
+                   [7 7 8 12]
+                   [7 9 11 15]]
+```
+
+`train/PNEUMONIA` và `test/NORMAL` dùng **bảng giống hệt nhau**. `train/NORMAL`
+dùng bảng riêng, lượng tử hóa thô hơn 5,6 lần ở các nhóm còn lại.
+
+**Bảng lượng tử hóa gần như xác định được lớp trong development:**
+
+| Miền | Tỉ lệ ảnh dùng qtable dùng chung giữa hai lớp |
+|---|---:|
+| development | **3,4%** |
+| benchmark | **93,9%** |
+
+Trong tập train, 96,6% ảnh dùng một bảng lượng tử hóa **chỉ thuộc về một lớp**.
+Nhãn đọc được từ header JPEG.
+
+## Cùng kết luận, đọc thẳng từ đĩa
 
 | Thư mục | n | KB trung vị | MP trung vị | **KB/MP** |
 |---|---:|---:|---:|---:|
@@ -145,8 +185,7 @@ thu nhận:
 
 Năm quan sát, một nguyên nhân:
 
-1. Ảnh NORMAL trong train được lưu ở chất lượng JPEG cao hơn hẳn (245 so với
-   76–80 KB/MP).
+1. Ảnh NORMAL trong train được lưu ở JPEG quality 95,5; mọi nhóm khác ở 75,0.
 2. Trong development, điều đó cho một bộ phân loại gần hoàn hảo không liên quan
    gì tới phổi (AUC 0,999). Mô hình học nó → **OOF group AUC 0,9994**.
 3. Ở benchmark, đặc trưng này không mang thông tin lớp nào (AUC 0,505).
@@ -172,7 +211,7 @@ Năm quan sát, một nguyên nhân:
 đặc trưng tắt nhìn thấy được trong pixel; nó giải thích phần lớn khoảng cách
 OOF→benchmark và tập trung vào lớp NORMAL.
 
-**Chưa được phép.** Chưa chứng minh trực tiếp mạng dùng nhiễu nén — mới có ba
+**Chưa được phép.** Chưa chứng minh trực tiếp mạng dùng dấu vết nén — mới có ba
 tầng bằng chứng quan sát cộng một phép cân bằng. Bằng chứng nhân quả cần can
 thiệp trên chính ảnh: nén lại toàn bộ dataset về một mức chất lượng rồi huấn
 luyện lại. Đó là thí nghiệm tiếp theo, và nó rẻ.
@@ -193,9 +232,14 @@ Thí nghiệm tiếp theo đáng làm nhất:
 
 ## Cảnh báo cho các kết quả công bố trên dataset này
 
-Các báo cáo đạt 99%+ trên tập chia gốc của bộ dữ liệu này cần được đọc lại
-trong bối cảnh: một đặc trưng không liên quan bệnh lý tách hai lớp trong tập
-train ở AUC 0,999. Không có gì bảo đảm mô hình đang học bệnh lý.
+Tập chia gốc cho phép phân biệt hai lớp gần như hoàn hảo chỉ bằng dấu vết mã
+hóa: 96,6% ảnh trong development mang bảng lượng tử hóa chỉ thuộc một lớp. Do
+đó **các kết quả nội bộ trên 99% công bố trên tập chia này tương thích với việc
+khai thác shortcut, trừ khi đặc tính mã hóa đã được kiểm soát tường minh.**
+
+Điều này không chứng minh rằng mọi mô hình đã công bố đều dựa vào shortcut —
+mỗi nghiên cứu có thể chia lại, resize hoặc mã hóa lại. Nhưng nó là cảnh báo
+đối với mọi kết quả dùng tập chia development gốc mà không audit mã hóa.
 
 ## File sinh ra
 
