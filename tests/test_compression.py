@@ -69,20 +69,38 @@ def test_lower_quality_loses_more_detail(textured):
     assert np.abs(coarse - reference).mean() > np.abs(fine - reference).mean()
 
 
-def test_standardising_two_encodings_brings_them_together(textured):
-    """The point of the intervention: same source, different history, one output.
+def test_standardising_to_the_coarser_level_converges_two_encodings(textured):
+    """Re-encoding at the coarser of two levels brings them together.
 
-    Two copies encoded at different qualities should end up more alike after
-    both pass through one fixed table than they were before.
+    This is the dataset's situation: normals stored finely, everything else
+    coarsely. Quantizing the fine copy down to the coarse level removes the
+    detail only it had.
     """
-    high = roundtrip(textured, canonical_qtable(95))
-    low = roundtrip(textured, canonical_qtable(60))
-    before = np.abs(high.astype(float) - low.astype(float)).mean()
+    fine = roundtrip(textured, canonical_qtable(95))
+    coarse = roundtrip(textured, canonical_qtable(75))
+    before = np.abs(fine.astype(float) - coarse.astype(float)).mean()
 
     table = canonical_qtable(75)
-    after = np.abs(roundtrip(high, table).astype(float)
-                   - roundtrip(low, table).astype(float)).mean()
+    after = np.abs(roundtrip(fine, table).astype(float)
+                   - roundtrip(coarse, table).astype(float)).mean()
     assert after < before
+
+
+def test_standardising_to_an_intermediate_level_does_not_converge(textured):
+    """An intermediate target leaves the two apart, and can widen the gap.
+
+    Pins why the Q85 control could not work: re-encoding only ever removes
+    detail, so a level finer than the coarser input cannot lift that input to
+    meet the other. Choosing a middle quality neutralises nothing.
+    """
+    fine = roundtrip(textured, canonical_qtable(95))
+    coarse = roundtrip(textured, canonical_qtable(75))
+    before = np.abs(fine.astype(float) - coarse.astype(float)).mean()
+
+    table = canonical_qtable(85)
+    after = np.abs(roundtrip(fine, table).astype(float)
+                   - roundtrip(coarse, table).astype(float)).mean()
+    assert after >= before
 
 
 def test_letterbox_preserves_aspect_and_pads(textured):
