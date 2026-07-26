@@ -47,3 +47,4 @@ notebooks/results_v4/results_resolution_pilot_proxies.csv
 # Gói đọc phim: ảnh bệnh nhân + khóa giải mù, không đưa lên git
 clinical_review_package/images/
 clinical_review_package/private/
+notebooks/result_v5/validation_predictions_*.csv
