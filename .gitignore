@@ -41,3 +41,4 @@ notebooks/results_v4/__results___files/
 notebooks/results_v4/validation_predictions_*.csv
 notebooks/results_v4/manifest_fold*.csv
 notebooks/results_v4/predictions_benchmark_per_fold.csv
+notebooks/results_v4/nuisance_feature_manifest.csv

@@ -1,0 +1,13 @@
+target,class,model,auc_oof,n,n_positive
+domain,NORMAL,logistic,0.9999744781697202,1444,225
+domain,NORMAL,boosting,0.999930726460669,1444,225
+domain,PNEUMONIA,logistic,0.6853081331054589,2653,203
+domain,PNEUMONIA,boosting,0.7742837036292349,2653,203
+false_positive,resnet18,logistic,0.8688920708788258,225,74
+false_positive,resnet18,boosting,0.8695185251476643,225,74
+false_positive,stretch_nhe,logistic,0.887584235246069,225,59
+false_positive,stretch_nhe,boosting,0.8567490300183785,225,59
+false_positive,augment_manh,logistic,0.8362472963229992,225,73
+false_positive,augment_manh,boosting,0.8421052631578947,225,73
+false_positive,stretch_manh,logistic,0.857492218763895,225,52
+false_positive,stretch_manh,boosting,0.8634948866162739,225,52
