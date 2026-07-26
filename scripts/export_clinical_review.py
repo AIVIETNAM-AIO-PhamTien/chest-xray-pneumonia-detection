@@ -135,13 +135,36 @@ def main():
     pd.DataFrame(key_rows).sort_values("review_id").to_csv(
         PACKAGE / "private" / "unblinding_key.csv", index=False)
 
-    form = blinded[["review_id", "n_images"]].copy()
-    for column in ("diagnostic_quality", "positioning_crop",
-                   "pneumonia_compatible_opacity", "other_abnormality",
-                   "overall_examination", "confidence_1_to_5",
-                   "free_text_comment"):
-        form[column] = ""
-    for reviewer in ("A", "B"):
+    # Practice cases sit outside the analysis so a reader can settle into the
+    # form without those judgements entering any comparison.
+    used = {group for groups in chosen.values() for group in groups}
+    spare = [g for g in true_negative + true_positive if g not in used]
+    practice_ids = []
+    for number, group in enumerate(rng.choice(spare, 4, replace=False), start=1):
+        practice_id = f"P{number:02d}"
+        folder = images_root / practice_id
+        folder.mkdir(exist_ok=True)
+        files = benchmark[benchmark["group_id"] == group].reset_index(drop=True)
+        for position, row in files.iterrows():
+            source = root / row["path"].split("chest_xray/")[-1]
+            with Image.open(source) as handle:
+                handle.convert("L").save(
+                    folder / f"{practice_id}_{position + 1:02d}.png")
+        practice_ids.append({"review_id": practice_id, "n_images": len(files),
+                             "folder": f"images/{practice_id}"})
+    pd.DataFrame(practice_ids).to_csv(PACKAGE / "practice_cases.csv", index=False)
+
+    columns = ("diagnostic_quality", "positioning_crop",
+               "pneumonia_compatible_opacity", "other_abnormality",
+               "overall_examination", "confidence_1_to_5", "free_text_comment")
+    # Each reader gets a different order, so a shared drift over the session
+    # cannot line up with the comparison being measured.
+    for reviewer, offset in (("A", 1), ("B", 2)):
+        order_rng = np.random.default_rng(SEED + offset)
+        form = blinded.sample(frac=1.0, random_state=int(
+            order_rng.integers(0, 2 ** 31)))[["review_id", "n_images"]]
+        for column in columns:
+            form[column] = ""
         form.to_csv(PACKAGE / f"review_form_reviewer_{reviewer}.csv", index=False)
 
     (PACKAGE / "review_codebook.md").write_text("""# Sổ mã hóa cho phần đọc phim

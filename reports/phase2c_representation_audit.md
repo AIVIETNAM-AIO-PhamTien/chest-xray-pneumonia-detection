@@ -5,7 +5,7 @@ encoder đóng băng.
 
 Tái tạo: `python3 scripts/representation_audit.py`
 
-## Kết quả 1 — Miền được mã hóa mạnh, và chỉ trong lớp NORMAL
+## Kết quả 1 — Miền được mã hóa ở cả hai lớp, mạnh hơn hẳn ở NORMAL
 
 Probe tuyến tính đọc từ activation đã pooling:
 
@@ -18,9 +18,14 @@ Probe tuyến tính đọc từ activation đã pooling:
 | penultimate | **0,974** | 0,701 | **0,956** | 0,695 |
 
 Từ `layer1` trở đi, biểu diễn đã phân biệt được ảnh NORMAL đến từ development
-hay benchmark ở AUC 0,94. Với PNEUMONIA chỉ 0,66–0,73.
+hay benchmark ở AUC 0,94.
 
-Bất đối xứng quan sát được ở mức score giờ tái hiện ở **mức biểu diễn**.
+Với PNEUMONIA là 0,66–0,73 — thấp hơn nhiều nhưng **vẫn trên mức ngẫu nhiên**.
+Nên câu đúng là thông tin miền được mã hóa ở **cả hai lớp**, chỉ mạnh hơn và
+bền hơn rõ rệt ở NORMAL. Không được viết "chỉ tồn tại ở NORMAL".
+
+Bằng chứng nằm ở **mức độ bất đối xứng**, và nó khớp với chuỗi đã đo: thống kê
+đầu vào → biểu diễn ẩn → điểm số → hành vi báo nhầm.
 
 ## Kết quả 2 — Embedding mã hóa đặc trưng thu nhận
 
@@ -35,7 +40,7 @@ R² khi hồi quy từ penultimate embedding:
 
 Mạng giữ lại thông tin về cách ảnh được thu nhận, không chỉ nội dung.
 
-## Kết quả 3 — Mạng "biết trước" nó sẽ sai ở đâu
+## Kết quả 3 — Một phân hoạch hard-NORMAL ổn định
 
 Probe FP so với TN trong riêng benchmark NORMAL:
 
@@ -44,10 +49,31 @@ Probe FP so với TN trong riêng benchmark NORMAL:
 | B0 | **0,984** |
 | B1 | **0,978** |
 
-Cao hơn hẳn mức 0,84–0,89 khi dự đoán từ đặc trưng thu nhận thủ công. Biểu diễn
-tổ chức ảnh NORMAL thành nhóm dễ và nhóm khó gần như tách hoàn toàn.
+Cao hơn hẳn mức 0,84–0,89 khi dự đoán từ đặc trưng thu nhận thủ công.
 
-## Kết quả 4 — Hướng miền gần vuông góc với hướng bệnh
+**Cảnh báo về tính độc lập.** FP và TN được định nghĩa bởi chính điểm số và
+ngưỡng của mô hình, còn classifier cũng là một ánh xạ tuyến tính trên chính
+embedding này — nên một probe tuyến tính khác có thể đang dựng lại đường biên
+đã tạo ra nhãn. Hai kiểm tra ở `scripts/error_probe_checks.py` cho thấy không
+phải vậy:
+
+| Embedding | Lỗi của | Nguyên bản | Đã bỏ hướng bệnh |
+|---|---|---:|---:|
+| B0 | B0 | 0,9842 | **0,9832** |
+| B0 | B1 (chéo) | 0,9524 | 0,9532 |
+| B1 | B0 (chéo) | 0,9438 | 0,9334 |
+| B1 | B1 | 0,9777 | **0,9710** |
+
+Bỏ hẳn hướng phân loại gần như không đổi gì, và embedding của mô hình này dự
+đoán được lỗi của mô hình kia ở 0,94–0,95.
+
+Kết luận được phép: **một phân hoạch hard-NORMAL ổn định, chia sẻ giữa hai
+pipeline ResNet18 và gần như độc lập với hướng phân loại tuyến tính.**
+
+Chưa được phép: "độc lập với mô hình" hay "độc lập với kiến trúc" — B0 và B1
+cùng là ResNet18, chỉ khác tiền xử lý và augmentation.
+
+## Kết quả 4 — Hướng miền và hướng bệnh liên kết yếu
 
 Cosine giữa vector probe miền và hiệu hai hàng của lớp phân loại:
 
@@ -56,11 +82,21 @@ Cosine giữa vector probe miền và hiệu hai hàng của lớp phân loại:
 | B0 | +0,110 |
 | B1 | +0,063 |
 
-Hai hướng ngẫu nhiên trong không gian 512 chiều cho cosine ~0 với độ lệch chuẩn
-1/√512 ≈ 0,044. Nên +0,11 và +0,06 chỉ nhỉnh hơn ngẫu nhiên chút ít.
+Đối chiếu với phân phối hoán vị (2.000 lần):
 
-Đọc theo khung quyết định đã đặt: đây **không** phải trường hợp hai hướng đồng
-tuyến. Về mặt hình học, có thể triệt hướng miền mà không phá hướng bệnh.
+| Cấu hình | cosine | null TB | null SD | p hai phía |
+|---|---:|---:|---:|---:|
+| B0 | 0,110 | −0,000 | 0,045 | **0,015** |
+| B1 | 0,063 | −0,001 | 0,044 | 0,160 |
+
+B0 nhỉnh hơn ngẫu nhiên một chút; B1 **không** phân biệt được với ngẫu nhiên.
+
+Cách viết đúng: hai hướng tuyến tính **liên kết yếu**. Không được viết "hoàn
+toàn độc lập" hay "hai không gian con trực giao" — cosine tính trên toạ độ thô
+phụ thuộc scaling và regularization, và trực giao của hai hướng tuyến tính
+không bảo đảm gỡ được thông tin miền mà không chạm phi tuyến vào thông tin bệnh.
+
+Dù sao, vấn đề quyết định **không phải cosine** mà là thiếu chồng lấn.
 
 ## Kết quả 5 — Nhưng dữ liệu không cho phép
 
@@ -81,8 +117,9 @@ Gần như không có ví dụ nào của cả hai lớp ở cùng một acquisi
 
 Hai kết quả tưởng như mâu thuẫn, thực ra bổ sung nhau:
 
-**Hướng gần vuông góc** nói rằng mạng *tình cờ* mã hóa hai thứ ở hai hướng khác
-nhau. Nó không nói dữ liệu cho phép *kiểm chứng* hướng nào là bệnh lý.
+**Liên kết yếu giữa hai hướng** nói rằng mạng *tình cờ* mã hóa hai thứ theo hai
+hướng phần lớn khác nhau. Nó không nói dữ liệu cho phép *kiểm chứng* hướng nào
+là bệnh lý.
 
 **Chồng lấn 0,4%** nói rằng không thể ước lượng "viêm phổi trông như thế nào khi
 giữ cố định acquisition style", vì gần như không tồn tại cặp quan sát như vậy.
@@ -138,4 +175,9 @@ invariance.
 ```
 results_representation_probes.csv
 results_direction_alignment.csv
+results_error_probe_checks.csv
+results_direction_alignment_null.csv
 ```
+
+Kế hoạch phân tích phần đọc phim đã khóa tại
+[`clinical_review_preregistration.md`](clinical_review_preregistration.md).
