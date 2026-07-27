@@ -1,0 +1,15 @@
+{
+  "python": "3.12.13",
+  "torch": "2.10.0+cu128",
+  "torchvision": "0.25.0+cu128",
+  "numpy": "2.0.2",
+  "pandas": "2.3.3",
+  "scikit-learn": "1.6.1",
+  "scipy": "1.16.3",
+  "pillow": "11.3.0",
+  "device": "cuda",
+  "device_name": "Tesla T4",
+  "run_mode": "full",
+  "seed": 42,
+  "deterministic": true
+}

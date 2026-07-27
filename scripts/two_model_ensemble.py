@@ -32,7 +32,7 @@ from sklearn.metrics import confusion_matrix, roc_auc_score, roc_curve
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-V4, V5 = Path("notebooks/results_v4"), Path("notebooks/result_v5")
+V4, V5 = Path("notebooks/results_v4"), Path("notebooks/results_v5")
 MEMBERS = {
     "resnet18_b1": (V4, "stretch_manh"),
     "densenet121": (V5, "densenet121_robust"),
