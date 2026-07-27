@@ -176,6 +176,41 @@ def test_normalising_by_multiplier_sum_keeps_the_loss_scale():
     assert abs(correct - plain) < abs(by_multiplier - plain)
 
 
+def test_constant_multiplier_preserves_the_loss_scale():
+    """Scaling every sample equally must be a no-op, not a rescaling.
+
+    All-ones is the weaker version of this check: a uniform multiplier of any
+    size has to cancel, or the objective silently depends on how heavy the
+    weights happen to be rather than on which samples carry them.
+    """
+    torch.manual_seed(3)
+    logits = torch.randn(48, 2)
+    labels = torch.randint(0, 2, (48,))
+    weights = torch.tensor([1.9, 0.7])
+    plain = F.cross_entropy(logits, labels, weight=weights)
+    for constant in (0.5, 2.0, 7.0):
+        multiplier = torch.full((48,), constant)
+        assert torch.allclose(
+            _weighted_loss(logits, labels, weights, multiplier), plain,
+            atol=1e-6), f"multiplier hằng {constant} làm đổi scale loss"
+
+
+def test_constant_multiplier_preserves_gradients():
+    """The gradient, not just the loss value, must be unchanged."""
+    torch.manual_seed(4)
+    labels = torch.randint(0, 2, (48,))
+    weights = torch.tensor([1.9, 0.7])
+    base = torch.randn(48, 2)
+
+    reference = base.clone().requires_grad_(True)
+    F.cross_entropy(reference, labels, weight=weights).backward()
+
+    scaled = base.clone().requires_grad_(True)
+    _weighted_loss(scaled, labels, weights, torch.full((48,), 3.0)).backward()
+
+    assert (reference.grad - scaled.grad).abs().max() < 1e-6
+
+
 def test_hard_samples_carry_more_gradient():
     """The multiplier must actually shift emphasis onto the flagged samples."""
     torch.manual_seed(2)
