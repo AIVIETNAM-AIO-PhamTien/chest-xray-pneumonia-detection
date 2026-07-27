@@ -1,0 +1,23 @@
+{
+  "torchxrayvision": "1.5.2",
+  "encoders": {
+    "all": {
+      "weights": "densenet121-res224-all",
+      "sha256": "af003240c5936973",
+      "pathologies": 18,
+      "op_threshs_disabled": true,
+      "parameters_millions": 6.966034
+    },
+    "rsna": {
+      "weights": "densenet121-res224-rsna",
+      "sha256": "fb3ed7e348813e80",
+      "pathologies": 18,
+      "op_threshs_disabled": true,
+      "parameters_millions": 6.966034
+    }
+  },
+  "gate_sensitivity": 0.995,
+  "final_gate": 0.08144124597311014,
+  "rd_threshold": 0.5872680097818375,
+  "benchmark_loaded": false
+}

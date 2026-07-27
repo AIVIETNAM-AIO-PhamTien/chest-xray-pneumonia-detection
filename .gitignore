@@ -62,3 +62,4 @@ notebooks/results_v6/*.pth
 notebooks/results_v6/manifest_fold*.csv
 notebooks/results_v6/validation_predictions_*.csv
 notebooks/results_v6/predictions_*_images.csv
+notebooks/results_c3/*.pkl
