@@ -1,0 +1,9 @@
+{
+  "commit": "f20f36693c439333476885a91bbaec3d7aa74ff3",
+  "sources": {
+    "resnet18_b1": "notebooks/results_v4",
+    "densenet121_v5": "notebooks/results_v5",
+    "deit_small": "notebooks/results_v6"
+  },
+  "script": "scripts/build_final_results.py"
+}
