@@ -54,3 +54,7 @@ notebooks/results_v5/manifest_fold*.csv
 notebooks/results_v5/predictions_oof_*_images.csv
 notebooks/results_v5/validation_predictions_*.csv
 notebooks/results_v5/predictions_known_benchmark_*_images.csv
+notebooks/results_stage_b/*.pth
+notebooks/results_stage_b/manifest_fold*.csv
+notebooks/results_stage_b/validation_predictions_*.csv
+notebooks/results_stage_b/predictions_*_images.csv
