@@ -177,3 +177,37 @@ def test_hsas_weights_the_operating_region_more_than_global_auc(separable):
     auc_drop = roc_auc_score(labels, probs) - roc_auc_score(labels, damaged)
     hsas_drop = hsas(labels, probs, 0.97) - hsas(labels, damaged, 0.97)
     assert hsas_drop > auc_drop
+
+
+def test_hsas_ignores_everything_below_the_region():
+    """Two curves that agree above 97% sensitivity must score the same.
+
+    This is the precise form of locality. The loose version -- damage at low
+    sensitivity barely moves HSAS -- is not constructible here, but the exact
+    statement is: whatever happens under the threshold band is invisible,
+    however far apart global AUC ends up.
+    """
+    from sklearn.metrics import roc_auc_score
+    rng = np.random.default_rng(31)
+    n = 600
+    labels = np.r_[np.zeros(n, int), np.ones(n, int)]
+
+    # The lowest-scoring 5% of positives and the negatives beneath them fix
+    # the region above 97% sensitivity; everything else is free to differ.
+    low_positives = np.linspace(0.50, 0.53, 30)
+    low_negatives = np.linspace(0.00, 0.49, n)
+
+    # Variant A spreads its remaining positives; variant B piles them high.
+    tail_a = np.linspace(0.60, 1.00, n - 30)
+    tail_b = np.r_[np.linspace(0.54, 0.58, (n - 30) // 2),
+                   np.full(n - 30 - (n - 30) // 2, 0.99)]
+
+    probs_a = np.r_[low_negatives, low_positives, tail_a]
+    probs_b = np.r_[low_negatives, low_positives, tail_b]
+
+    assert hsas(labels, probs_a, 0.97) == pytest.approx(
+        hsas(labels, probs_b, 0.97), abs=1e-9)
+    # Both rank perfectly here, so the point is the invariance itself:
+    # rearranging the comfortably-caught positives cannot move the metric.
+    assert roc_auc_score(labels, probs_a) == pytest.approx(
+        roc_auc_score(labels, probs_b), abs=1e-9)

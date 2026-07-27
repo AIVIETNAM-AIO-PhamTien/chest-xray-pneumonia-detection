@@ -102,7 +102,11 @@ def high_sensitivity_average_specificity(
     if len(np.unique(labels)) < 2:
         raise ValueError("HSAS cần cả hai lớp; chỉ thấy "
                          f"{np.unique(labels).tolist()}")
-    fpr, tpr, _ = roc_curve(labels, np.asarray(probs, dtype=float))
+    # drop_intermediate discards points sklearn judges unnecessary for
+    # plotting, which can include ones inside the narrow band being integrated.
+    fpr, tpr, _ = roc_curve(labels, np.asarray(probs, dtype=float),
+                            drop_intermediate=False)
+
     # An ROC can hold several points at one sensitivity; the reachable
     # operating point is the cheapest of them. Interpolating through the
     # others would charge false positives the model never had to pay.
@@ -110,6 +114,7 @@ def high_sensitivity_average_specificity(
     tpr, fpr = tpr[order], fpr[order]
     keep = np.r_[True, np.diff(tpr) > 0]
     tpr, fpr = tpr[keep], fpr[keep]
+    assert np.all(np.diff(fpr) >= -1e-12), "biên Pareto không đơn điệu"
 
     # Integrate along sensitivity, so the result is in specificity units.
     grid = np.linspace(min_sensitivity, 1.0, 512)
