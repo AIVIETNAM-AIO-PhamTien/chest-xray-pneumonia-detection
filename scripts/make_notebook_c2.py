@@ -432,23 +432,46 @@ if differing == 0:
 
 E0 là mô hình đang khóa và nằm trong tập ứng viên. Nếu nó thắng, benchmark
 không được mở."""),
-    code('''ROOT_V4 = next((p for p in [LOCAL_PROJECT_ROOT / "notebooks/results_v4",
-                            Path("/kaggle/input")] if p.is_dir()), None)
-ROOT_V5 = next((p for p in [LOCAL_PROJECT_ROOT / "notebooks/results_v5",
-                            Path("/kaggle/input")] if p.is_dir()), None)
+    code('''SEARCH_ROOTS = [p for p in (LOCAL_PROJECT_ROOT / "notebooks",
+                                     Path("/kaggle/input")) if p.is_dir()]
 
 
-def pooled_oof(root, name):
-    """One out-of-fold row per group for a frozen model."""
-    hits = sorted(root.rglob(f"predictions_oof_{name}_groups.csv"))
-    if hits:
-        return pd.read_csv(hits[0])[["group_id", "label", "p_pneumonia"]]
+def pooled_oof(name):
+    """One out-of-fold row per group for a frozen model from an earlier run.
+
+    Searches every attached input rather than a fixed path, since the Kaggle
+    mount is named after the source notebook. Raises with instructions when a
+    run is missing, because the alternative is an IndexError that says nothing
+    about which output needs attaching.
+
+    Args:
+        name: Experiment name as it appears in the saved filenames.
+
+    Returns:
+        Frame with group_id, label and p_pneumonia.
+
+    Raises:
+        RuntimeError: If neither the pooled file nor the five per-fold files
+            can be found.
+    """
+    for root in SEARCH_ROOTS:
+        hits = sorted(root.rglob(f"predictions_oof_{name}_groups.csv"))
+        if hits:
+            return pd.read_csv(hits[0])[["group_id", "label", "p_pneumonia"]]
+
     parts = []
     for fold in range(5):
-        path = sorted(root.rglob(
-            f"validation_predictions_{name}_fold{fold}.csv"))[0]
-        parts.append(pd.read_csv(path, usecols=["group_id", "class_id",
-                                                "p_pneumonia"]))
+        hits = [h for root in SEARCH_ROOTS
+                for h in sorted(root.rglob(
+                    f"validation_predictions_{name}_fold{fold}.csv"))]
+        if not hits:
+            raise RuntimeError(
+                f"Không tìm thấy dự đoán OOF của '{name}'. Trên Kaggle hãy vào "
+                "Add Input -> Your Work -> Notebook và gắn bản chạy THÀNH CÔNG "
+                "của v4 (ResNet18 stretch_manh) và v5 (DenseNet121). "
+                f"Đã tìm trong: {[str(r) for r in SEARCH_ROOTS]}")
+        parts.append(pd.read_csv(hits[0], usecols=["group_id", "class_id",
+                                                   "p_pneumonia"]))
     pooled = pd.concat(parts, ignore_index=True)
     return (pooled.groupby("group_id", as_index=False)
             .agg(label=("class_id", "first"),
@@ -456,8 +479,8 @@ def pooled_oof(root, name):
 
 
 members = {
-    "resnet_v4": pooled_oof(ROOT_V4, "stretch_manh"),
-    "densenet_v5": pooled_oof(ROOT_V5, "densenet121_robust"),
+    "resnet_v4": pooled_oof("stretch_manh"),
+    "densenet_v5": pooled_oof("densenet121_robust"),
 }
 own = pd.concat([pd.DataFrame({"group_id": r["val_groups"],
                                "class_id": r["val_labels"],
