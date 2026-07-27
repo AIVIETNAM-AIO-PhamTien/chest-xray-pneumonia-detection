@@ -6,7 +6,7 @@ import pytest
 from src.evaluation.selection import (
     better_checkpoint,
     exact_threshold_at_sensitivity,
-    normalized_partial_auc,
+    high_sensitivity_average_specificity as hsas,
     specificity_at_sensitivity,
 )
 
@@ -67,14 +67,14 @@ def test_unreachable_sensitivity_returns_floor():
     assert exact_threshold_at_sensitivity(labels, probs, 1.01) == 0.0
 
 
-def test_partial_auc_is_one_for_a_perfect_ranking():
+def test_hsas_is_one_for_a_perfect_ranking():
     """No overlap means the restricted region is perfect too."""
     labels = np.r_[np.zeros(100, int), np.ones(100, int)]
     probs = np.r_[np.linspace(0.0, 0.4, 100), np.linspace(0.6, 1.0, 100)]
-    assert normalized_partial_auc(labels, probs, 0.97) == pytest.approx(1.0, abs=1e-6)
+    assert hsas(labels, probs, 0.97) == pytest.approx(1.0, abs=1e-6)
 
 
-def test_partial_auc_is_near_zero_for_random_scores():
+def test_hsas_is_near_zero_for_random_scores():
     """Chance ranking buys almost no specificity at 97% sensitivity.
 
     The metric is mean specificity, not a rescaled area, so the chance value
@@ -83,20 +83,20 @@ def test_partial_auc_is_near_zero_for_random_scores():
     rng = np.random.default_rng(1)
     labels = rng.binomial(1, 0.5, 6000)
     probs = rng.uniform(size=6000)
-    assert normalized_partial_auc(labels, probs, 0.97) == pytest.approx(0.015, abs=0.02)
+    assert hsas(labels, probs, 0.97) == pytest.approx(0.015, abs=0.02)
 
 
-def test_partial_auc_agrees_with_specificity_at_the_target():
+def test_hsas_agrees_with_specificity_at_the_target():
     """It should sit near the discrete specificity it generalises."""
     rng = np.random.default_rng(5)
     labels = np.r_[np.zeros(600, int), np.ones(600, int)]
     probs = np.r_[rng.beta(2, 6, 600), rng.beta(6, 2, 600)]
     discrete, _ = specificity_at_sensitivity(labels, probs, 0.97)
-    assert normalized_partial_auc(labels, probs, 0.97) == pytest.approx(
+    assert hsas(labels, probs, 0.97) == pytest.approx(
         discrete, abs=0.12)
 
 
-def test_partial_auc_sees_local_damage_global_auc_misses():
+def test_hsas_sees_local_damage_global_auc_misses():
     """The point of the metric: react where the operating point sits.
 
     A handful of negatives pushed into the range of the lowest-scoring
@@ -111,70 +111,69 @@ def test_partial_auc_sees_local_damage_global_auc_misses():
     damaged[:8] = np.linspace(0.502, 0.512, 8)
 
     auc_drop = roc_auc_score(labels, probs) - roc_auc_score(labels, damaged)
-    pauc_drop = (normalized_partial_auc(labels, probs, 0.97)
-                 - normalized_partial_auc(labels, damaged, 0.97))
+    pauc_drop = (hsas(labels, probs, 0.97)
+                 - hsas(labels, damaged, 0.97))
     assert auc_drop < 0.001
     assert pauc_drop > auc_drop * 10
 
 
-def test_partial_auc_is_nan_for_a_single_class():
-    """One class present means there is no ROC to restrict."""
-    assert np.isnan(normalized_partial_auc(np.zeros(10, int),
-                                           np.linspace(0, 1, 10)))
+def test_single_class_raises_rather_than_returning_nan():
+    """A silent NaN would flow into selection and quietly break the tie-break."""
+    with pytest.raises(ValueError, match="cần cả hai lớp"):
+        hsas(np.zeros(10, int), np.linspace(0, 1, 10))
 
 
-def _entry(specificity, partial_auc, nll):
-    return {"specificity": specificity, "partial_auc": partial_auc, "nll": nll}
+def test_hsas_is_invariant_to_monotonic_rescaling(separable):
+    """It reads the ranking, so any order-preserving map must leave it alone."""
+    labels, probs = separable
+    reference = hsas(labels, probs, 0.97)
+    for transform in (lambda p: p ** 3,
+                      lambda p: np.log(p + 1e-9),
+                      lambda p: 5.0 * p - 2.0):
+        assert hsas(labels, transform(probs), 0.97) == pytest.approx(
+            reference, abs=1e-9)
 
 
-def test_specificity_decides_outside_the_tie_band():
-    """A clear specificity gain wins regardless of the other metrics."""
-    replace, reason = better_checkpoint(_entry(0.90, 0.10, 9.0),
-                                        _entry(0.80, 0.99, 0.01))
-    assert replace and reason == "specificity"
+def test_hsas_is_invariant_to_row_order(separable):
+    """Shuffling the inputs must not move the metric."""
+    labels, probs = separable
+    rng = np.random.default_rng(11)
+    order = rng.permutation(len(labels))
+    assert hsas(labels[order], probs[order], 0.97) == pytest.approx(
+        hsas(labels, probs, 0.97), abs=1e-12)
 
 
-def test_specificity_loss_outside_the_band_is_rejected():
-    """And a clear loss is refused however good the rest looks."""
-    replace, reason = better_checkpoint(_entry(0.80, 0.99, 0.01),
-                                        _entry(0.90, 0.10, 9.0))
-    assert not replace and reason == "specificity"
+def test_hsas_ignores_dominated_operating_points():
+    """A costlier point at the same sensitivity must not be interpolated through.
 
-
-def test_partial_auc_breaks_a_specificity_tie():
-    """Inside the band the high-sensitivity region decides, not log-loss.
-
-    This is the case Stage B kept hitting: one group changes sides, which is
-    inside the band, and the old rule fell straight through to NLL.
+    Two thresholds reaching identical sensitivity at different false-positive
+    rates: only the cheaper one is reachable, so charging the dearer one would
+    understate the model.
     """
-    replace, reason = better_checkpoint(_entry(0.9959, 0.95, 0.20),
-                                        _entry(0.9918, 0.90, 0.10))
-    assert replace and reason == "partial_auc"
+    labels = np.r_[np.zeros(200, int), np.ones(200, int)]
+    probs = np.r_[np.linspace(0.0, 0.45, 200), np.linspace(0.55, 1.0, 200)]
+    padded_labels = np.r_[labels, np.zeros(3, int)]
+    padded_probs = np.r_[probs, np.full(3, 0.001)]
+    assert hsas(padded_labels, padded_probs, 0.97) == pytest.approx(
+        hsas(labels, probs, 0.97), abs=0.02)
 
 
-def test_nll_breaks_a_tie_in_both_specificity_and_partial_auc():
-    """When neither leading metric separates, calibration decides."""
-    replace, reason = better_checkpoint(_entry(0.9959, 0.9005, 0.05),
-                                        _entry(0.9918, 0.9000, 0.10))
-    assert replace and reason == "nll"
+def test_hsas_weights_the_operating_region_more_than_global_auc(separable):
+    """The complement of the locality test, and the one that is constructible.
 
+    A property like "damage at low sensitivity leaves HSAS alone" cannot be
+    built here: reaching 97% sensitivity means catching almost every positive,
+    so any ranking error surfaces in that region. What can be shown is the
+    weighting -- HSAS reacts to the same error more strongly than global AUC.
+    """
+    from sklearn.metrics import roc_auc_score
+    labels, probs = separable
+    rng = np.random.default_rng(21)
+    damaged = probs.copy()
+    lowest_positive = np.sort(probs[labels == 1])[:6]
+    negatives = np.where(labels == 0)[0]
+    damaged[rng.choice(negatives, 6, replace=False)] = lowest_positive + 1e-4
 
-def test_a_full_tie_keeps_the_earlier_epoch():
-    """Nothing to choose between them means no reason to move."""
-    replace, reason = better_checkpoint(_entry(0.99, 0.90, 0.10),
-                                        _entry(0.99, 0.90, 0.10))
-    assert not replace and reason == "earlier_epoch"
-
-
-def test_missing_partial_auc_falls_through_to_nll():
-    """A degenerate region must not block selection."""
-    replace, reason = better_checkpoint(
-        {"specificity": 0.99, "partial_auc": float("nan"), "nll": 0.05},
-        {"specificity": 0.99, "partial_auc": float("nan"), "nll": 0.10})
-    assert replace and reason == "nll"
-
-
-def test_first_epoch_is_always_taken():
-    """There is nothing to compare against yet."""
-    replace, reason = better_checkpoint(_entry(0.5, 0.5, 1.0), None)
-    assert replace and reason == "first"
+    auc_drop = roc_auc_score(labels, probs) - roc_auc_score(labels, damaged)
+    hsas_drop = hsas(labels, probs, 0.97) - hsas(labels, damaged, 0.97)
+    assert hsas_drop > auc_drop

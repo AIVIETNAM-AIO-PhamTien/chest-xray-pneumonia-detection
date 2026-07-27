@@ -6,9 +6,10 @@ so almost every real difference lands inside the 0.005 band that was meant to
 absorb noise. The rule then fell through to log-loss, which measures
 probability quality rather than the ranking near the operating point.
 
-Version 6 inserts partial AUC over the high-sensitivity region between the two.
-It reads the same part of the curve the threshold sits on, but continuously, so
-it can separate epochs that a whole-case metric cannot.
+Version 6 inserts HSAS@97 between the two: the mean specificity the model holds
+across sensitivities from 97% to 100%. It reads the same part of the curve the
+threshold sits on, but continuously, so it can separate epochs that a
+whole-case metric cannot.
 """
 
 from typing import Dict, Optional
@@ -18,8 +19,8 @@ from sklearn.metrics import roc_curve
 
 #: Specificity differences below this are treated as ties.
 SPECIFICITY_TIE = 0.005
-#: Partial AUC differences below this are treated as ties.
-PARTIAL_AUC_TIE = 0.002
+#: HSAS differences below this are treated as ties.
+HSAS_TIE = 0.002
 
 
 def exact_threshold_at_sensitivity(labels: np.ndarray, probs: np.ndarray,
@@ -66,9 +67,14 @@ def specificity_at_sensitivity(labels: np.ndarray, probs: np.ndarray,
     return float((negative < threshold).mean()), threshold
 
 
-def normalized_partial_auc(labels: np.ndarray, probs: np.ndarray,
-                           min_sensitivity: float = 0.97) -> float:
+def high_sensitivity_average_specificity(
+        labels: np.ndarray, probs: np.ndarray,
+        min_sensitivity: float = 0.97) -> float:
     """Mean specificity across the sensitivity range the model operates in.
+
+    Reported as HSAS@97. Deliberately not called partial AUC: a reader would
+    reasonably assume the McClish normalisation, and this is a different
+    quantity on a different scale.
 
     Integrates specificity over sensitivity from ``min_sensitivity`` to 1 and
     divides by the range, so the result reads as "the specificity this model
@@ -86,11 +92,16 @@ def normalized_partial_auc(labels: np.ndarray, probs: np.ndarray,
         min_sensitivity: Lower bound of the sensitivity range.
 
     Returns:
-        Mean specificity over the range, or NaN when it is degenerate.
+        Mean specificity over the range, in [0, 1].
+
+    Raises:
+        ValueError: If either class is absent, since there is no ROC to
+            restrict and a silent NaN would propagate into selection.
     """
     labels = np.asarray(labels)
     if len(np.unique(labels)) < 2:
-        return float("nan")
+        raise ValueError("HSAS cần cả hai lớp; chỉ thấy "
+                         f"{np.unique(labels).tolist()}")
     fpr, tpr, _ = roc_curve(labels, np.asarray(probs, dtype=float))
     # An ROC can hold several points at one sensitivity; the reachable
     # operating point is the cheapest of them. Interpolating through the
@@ -109,19 +120,19 @@ def normalized_partial_auc(labels: np.ndarray, probs: np.ndarray,
 def better_checkpoint(candidate: Dict[str, float],
                       incumbent: Optional[Dict[str, float]],
                       specificity_tie: float = SPECIFICITY_TIE,
-                      partial_auc_tie: float = PARTIAL_AUC_TIE):
+                      hsas_tie: float = HSAS_TIE):
     """Decide whether an epoch should replace the one currently held.
 
     Specificity at the sensitivity target decides first, since it is the
-    endpoint. Within the tie band, partial AUC over the same region decides,
-    then log-loss, then the earlier epoch. Reporting the reason makes the
+    endpoint. Within the tie band, HSAS@97 over the same region decides, then
+    log-loss, then the earlier epoch. Reporting the reason makes the
     hierarchy auditable after the fact rather than inferred from numbers.
 
     Args:
         candidate: Metrics for the current epoch.
         incumbent: Metrics for the held checkpoint, or None.
         specificity_tie: Band within which specificities count as equal.
-        partial_auc_tie: Band within which partial AUCs count as equal.
+        hsas_tie: Band within which HSAS values count as equal.
 
     Returns:
         Tuple of (replace, reason).
@@ -135,14 +146,18 @@ def better_checkpoint(candidate: Dict[str, float],
     if gap < -specificity_tie:
         return False, "specificity"
 
-    a, b = candidate.get("partial_auc"), incumbent.get("partial_auc")
+    a, b = candidate.get("hsas"), incumbent.get("hsas")
     if a is not None and b is not None and np.isfinite(a) and np.isfinite(b):
         difference = a - b
-        if difference > partial_auc_tie:
-            return True, "partial_auc"
-        if difference < -partial_auc_tie:
-            return False, "partial_auc"
+        if difference > hsas_tie:
+            return True, "hsas"
+        if difference < -hsas_tie:
+            return False, "hsas"
 
     if candidate["nll"] < incumbent["nll"] - 1e-9:
         return True, "nll"
     return False, "earlier_epoch"
+
+
+#: Kept so existing callers keep working; new output should say hsas_97.
+normalized_partial_auc = high_sensitivity_average_specificity
