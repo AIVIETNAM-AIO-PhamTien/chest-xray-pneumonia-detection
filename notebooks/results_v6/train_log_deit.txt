@@ -1,0 +1,122 @@
+runtime: Kaggle | mode: full
+device: cuda (Tesla T4) | AMP: True | workers: 2
+phiên bản: python=3.12.13 torch=2.10.0+cu128 torchvision=0.25.0+cu128 numpy=2.0.2 pandas=2.3.3 scikit-learn=1.6.1 scipy=1.16.3 pillow=11.3.0
+
+DATA_ROOT = /kaggle/input/datasets/paultimothymooney/chest-xray-pneumonia/chest_xray
+5,856 ảnh | 4,097 filename-derived groups
+
+5 fold, chia theo filename-derived group:
+  fold 0: train 4,168  val 1,064  test  624  |  group/hash ở >1 split: 0/0
+  fold 1: train 4,224  val 1,008  test  624  |  group/hash ở >1 split: 0/0
+  fold 2: train 4,165  val 1,067  test  624  |  group/hash ở >1 split: 0/0
+  fold 3: train 4,190  val 1,042  test  624  |  group/hash ở >1 split: 0/0
+  fold 4: train 4,181  val 1,051  test  624  |  group/hash ở >1 split: 0/0
+cache stretch: 294 MB cho 5,856 ảnh trong 57s
+model: deit_small_patch16_224.fb_in1k
+timm: 1.0.26 | pretrained: True | tham số: 21.7M
+backbone sha256: cb489a7792932483
+output shape: (2, 2)
+chuẩn hóa khớp pipeline hiện tại
+Bắt đầu full: 1 thí nghiệm × 5 fold × tối đa 12 epoch
+
+==============================================================
+deit_small  |  fold 0
+==============================================================
+deit_small_patch16_224.fb_in1k | 224px | resize stretch | augment manh | balancing weighted
+AdamW | lr 5e-05 | wd 0.05 | batch 16×1 = 16
+quy tắc chọn: spec@sens97 → HSAS@97 → NLL → epoch sớm hơn
+epoch  1/12  loss 0.2878  spec@sens97% 0.9506  HSAS 0.8433  AUC 0.9933  NLL 0.1319  lr 5.00e-05  first  <- best
+epoch  2/12  loss 0.1594  spec@sens97% 0.9547  HSAS 0.8348  AUC 0.9923  NLL 0.2335  lr 4.90e-05  specificity_tie_lower_hsas
+epoch  3/12  loss 0.1268  spec@sens97% 0.9753  HSAS 0.8167  AUC 0.9926  NLL 0.1536  lr 4.60e-05  higher_specificity  <- best
+epoch  4/12  loss 0.1012  spec@sens97% 0.9671  HSAS 0.8961  AUC 0.9958  NLL 0.1579  lr 4.14e-05  lower_specificity
+epoch  5/12  loss 0.0952  spec@sens97% 0.9465  HSAS 0.7907  AUC 0.9917  NLL 0.3603  lr 3.54e-05  lower_specificity
+epoch  6/12  loss 0.0716  spec@sens97% 0.9753  HSAS 0.9087  AUC 0.9962  NLL 0.1386  lr 2.86e-05  specificity_tie_higher_hsas  <- best
+epoch  7/12  loss 0.0614  spec@sens97% 0.9753  HSAS 0.9066  AUC 0.9964  NLL 0.1484  lr 2.14e-05  specificity_tie_lower_hsas
+epoch  8/12  loss 0.0570  spec@sens97% 0.9794  HSAS 0.9265  AUC 0.9973  NLL 0.1243  lr 1.46e-05  specificity_tie_higher_hsas  <- best
+epoch  9/12  loss 0.0386  spec@sens97% 0.9959  HSAS 0.9364  AUC 0.9975  NLL 0.2082  lr 8.63e-06  higher_specificity  <- best
+epoch 10/12  loss 0.0264  spec@sens97% 0.9877  HSAS 0.9311  AUC 0.9973  NLL 0.1986  lr 3.97e-06  lower_specificity
+epoch 11/12  loss 0.0295  spec@sens97% 0.9835  HSAS 0.9311  AUC 0.9973  NLL 0.1666  lr 1.01e-06  lower_specificity
+epoch 12/12  loss 0.0235  spec@sens97% 0.9835  HSAS 0.9322  AUC 0.9973  NLL 0.1578  lr 0.00e+00  lower_specificity
+giữ checkpoint epoch 9 (higher_specificity), spec 0.9959, HSAS 0.9364
+GPU đỉnh: cấp phát 0.91 GB, dành riêng 0.97 GB
+
+==============================================================
+deit_small  |  fold 1
+==============================================================
+deit_small_patch16_224.fb_in1k | 224px | resize stretch | augment manh | balancing weighted
+AdamW | lr 5e-05 | wd 0.05 | batch 16×1 = 16
+quy tắc chọn: spec@sens97 → HSAS@97 → NLL → epoch sớm hơn
+epoch  1/12  loss 0.2593  spec@sens97% 0.9139  HSAS 0.6170  AUC 0.9839  NLL 0.3060  lr 5.00e-05  first  <- best
+epoch  2/12  loss 0.1656  spec@sens97% 0.9754  HSAS 0.9624  AUC 0.9973  NLL 0.3382  lr 4.90e-05  higher_specificity  <- best
+epoch  3/12  loss 0.1421  spec@sens97% 0.9549  HSAS 0.8743  AUC 0.9940  NLL 0.4923  lr 4.60e-05  lower_specificity
+epoch  4/12  loss 0.1114  spec@sens97% 0.9877  HSAS 0.9732  AUC 0.9985  NLL 0.0505  lr 4.14e-05  higher_specificity  <- best
+epoch  5/12  loss 0.0970  spec@sens97% 0.9918  HSAS 0.9770  AUC 0.9983  NLL 0.0959  lr 3.54e-05  specificity_tie_higher_hsas  <- best
+epoch  6/12  loss 0.0764  spec@sens97% 0.9795  HSAS 0.9594  AUC 0.9984  NLL 0.0968  lr 2.86e-05  lower_specificity
+epoch  7/12  loss 0.0688  spec@sens97% 0.9877  HSAS 0.9296  AUC 0.9973  NLL 0.1672  lr 2.14e-05  specificity_tie_lower_hsas
+epoch  8/12  loss 0.0425  spec@sens97% 0.9918  HSAS 0.9722  AUC 0.9987  NLL 0.1831  lr 1.46e-05  specificity_tie_lower_hsas
+epoch  9/12  loss 0.0464  spec@sens97% 0.9918  HSAS 0.9664  AUC 0.9987  NLL 0.1264  lr 8.63e-06  specificity_tie_lower_hsas
+dừng sớm ở epoch 9
+giữ checkpoint epoch 5 (specificity_tie_higher_hsas), spec 0.9918, HSAS 0.9770
+GPU đỉnh: cấp phát 0.91 GB, dành riêng 0.97 GB
+
+==============================================================
+deit_small  |  fold 2
+==============================================================
+deit_small_patch16_224.fb_in1k | 224px | resize stretch | augment manh | balancing weighted
+AdamW | lr 5e-05 | wd 0.05 | batch 16×1 = 16
+quy tắc chọn: spec@sens97 → HSAS@97 → NLL → epoch sớm hơn
+epoch  1/12  loss 0.2614  spec@sens97% 0.9303  HSAS 0.8521  AUC 0.9908  NLL 0.2090  lr 5.00e-05  first  <- best
+epoch  2/12  loss 0.1784  spec@sens97% 0.9631  HSAS 0.9117  AUC 0.9945  NLL 0.0979  lr 4.90e-05  higher_specificity  <- best
+epoch  3/12  loss 0.1430  spec@sens97% 0.9344  HSAS 0.8599  AUC 0.9936  NLL 0.4151  lr 4.60e-05  lower_specificity
+epoch  4/12  loss 0.1150  spec@sens97% 0.9754  HSAS 0.9387  AUC 0.9969  NLL 0.1550  lr 4.14e-05  higher_specificity  <- best
+epoch  5/12  loss 0.0890  spec@sens97% 0.9754  HSAS 0.9224  AUC 0.9960  NLL 0.1304  lr 3.54e-05  specificity_tie_lower_hsas
+epoch  6/12  loss 0.0961  spec@sens97% 0.9713  HSAS 0.9260  AUC 0.9952  NLL 0.1105  lr 2.86e-05  specificity_tie_lower_hsas
+epoch  7/12  loss 0.0573  spec@sens97% 0.9672  HSAS 0.9410  AUC 0.9967  NLL 0.1390  lr 2.14e-05  lower_specificity
+epoch  8/12  loss 0.0529  spec@sens97% 0.9795  HSAS 0.9334  AUC 0.9968  NLL 0.1879  lr 1.46e-05  specificity_tie_lower_hsas
+dừng sớm ở epoch 8
+giữ checkpoint epoch 4 (higher_specificity), spec 0.9754, HSAS 0.9387
+GPU đỉnh: cấp phát 0.91 GB, dành riêng 1.01 GB
+
+==============================================================
+deit_small  |  fold 3
+==============================================================
+deit_small_patch16_224.fb_in1k | 224px | resize stretch | augment manh | balancing weighted
+AdamW | lr 5e-05 | wd 0.05 | batch 16×1 = 16
+quy tắc chọn: spec@sens97 → HSAS@97 → NLL → epoch sớm hơn
+epoch  1/12  loss 0.2617  spec@sens97% 0.8402  HSAS 0.7455  AUC 0.9841  NLL 0.1895  lr 5.00e-05  first  <- best
+epoch  2/12  loss 0.1955  spec@sens97% 0.9303  HSAS 0.7838  AUC 0.9879  NLL 0.2826  lr 4.90e-05  higher_specificity  <- best
+epoch  3/12  loss 0.1359  spec@sens97% 0.9467  HSAS 0.8685  AUC 0.9929  NLL 0.2618  lr 4.60e-05  higher_specificity  <- best
+epoch  4/12  loss 0.1091  spec@sens97% 0.9467  HSAS 0.8537  AUC 0.9935  NLL 0.2611  lr 4.14e-05  specificity_tie_lower_hsas
+epoch  5/12  loss 0.0997  spec@sens97% 0.9672  HSAS 0.8720  AUC 0.9948  NLL 0.4123  lr 3.54e-05  higher_specificity  <- best
+epoch  6/12  loss 0.0720  spec@sens97% 0.9754  HSAS 0.8813  AUC 0.9954  NLL 0.3969  lr 2.86e-05  higher_specificity  <- best
+epoch  7/12  loss 0.0512  spec@sens97% 0.9836  HSAS 0.9352  AUC 0.9969  NLL 0.1388  lr 2.14e-05  higher_specificity  <- best
+epoch  8/12  loss 0.0563  spec@sens97% 0.9713  HSAS 0.8843  AUC 0.9955  NLL 0.2361  lr 1.46e-05  lower_specificity
+epoch  9/12  loss 0.0326  spec@sens97% 0.9713  HSAS 0.9178  AUC 0.9959  NLL 0.1724  lr 8.63e-06  lower_specificity
+epoch 10/12  loss 0.0282  spec@sens97% 0.9713  HSAS 0.9402  AUC 0.9970  NLL 0.1494  lr 3.97e-06  lower_specificity
+epoch 11/12  loss 0.0261  spec@sens97% 0.9713  HSAS 0.9324  AUC 0.9966  NLL 0.1782  lr 1.01e-06  lower_specificity
+dừng sớm ở epoch 11
+giữ checkpoint epoch 7 (higher_specificity), spec 0.9836, HSAS 0.9352
+GPU đỉnh: cấp phát 0.91 GB, dành riêng 1.01 GB
+
+==============================================================
+deit_small  |  fold 4
+==============================================================
+deit_small_patch16_224.fb_in1k | 224px | resize stretch | augment manh | balancing weighted
+AdamW | lr 5e-05 | wd 0.05 | batch 16×1 = 16
+quy tắc chọn: spec@sens97 → HSAS@97 → NLL → epoch sớm hơn
+epoch  1/12  loss 0.2745  spec@sens97% 0.9508  HSAS 0.8591  AUC 0.9944  NLL 0.4745  lr 5.00e-05  first  <- best
+epoch  2/12  loss 0.1826  spec@sens97% 0.9836  HSAS 0.9447  AUC 0.9975  NLL 0.0689  lr 4.90e-05  higher_specificity  <- best
+epoch  3/12  loss 0.1203  spec@sens97% 0.9918  HSAS 0.9367  AUC 0.9975  NLL 0.2841  lr 4.60e-05  higher_specificity  <- best
+epoch  4/12  loss 0.1084  spec@sens97% 0.9836  HSAS 0.9525  AUC 0.9982  NLL 0.0821  lr 4.14e-05  lower_specificity
+epoch  5/12  loss 0.0910  spec@sens97% 0.9795  HSAS 0.9171  AUC 0.9970  NLL 0.3634  lr 3.54e-05  lower_specificity
+epoch  6/12  loss 0.0791  spec@sens97% 0.9918  HSAS 0.9495  AUC 0.9980  NLL 0.2986  lr 2.86e-05  specificity_tie_higher_hsas  <- best
+epoch  7/12  loss 0.0651  spec@sens97% 0.9795  HSAS 0.9578  AUC 0.9981  NLL 0.0842  lr 2.14e-05  lower_specificity
+epoch  8/12  loss 0.0491  spec@sens97% 0.9877  HSAS 0.9692  AUC 0.9986  NLL 0.0588  lr 1.46e-05  specificity_tie_higher_hsas  <- best
+epoch  9/12  loss 0.0397  spec@sens97% 0.9959  HSAS 0.9644  AUC 0.9984  NLL 0.0759  lr 8.63e-06  higher_specificity  <- best
+epoch 10/12  loss 0.0307  spec@sens97% 0.9918  HSAS 0.9562  AUC 0.9981  NLL 0.1211  lr 3.97e-06  specificity_tie_lower_hsas
+epoch 11/12  loss 0.0188  spec@sens97% 0.9959  HSAS 0.9567  AUC 0.9983  NLL 0.1081  lr 1.01e-06  specificity_tie_lower_hsas
+epoch 12/12  loss 0.0199  spec@sens97% 0.9959  HSAS 0.9571  AUC 0.9983  NLL 0.1101  lr 0.00e+00  specificity_tie_lower_hsas
+giữ checkpoint epoch 9 (higher_specificity), spec 0.9959, HSAS 0.9644
+GPU đỉnh: cấp phát 0.91 GB, dành riêng 1.01 GB
+
+tổng thời gian: 16.4 phút (1 thí nghiệm × 5 fold)

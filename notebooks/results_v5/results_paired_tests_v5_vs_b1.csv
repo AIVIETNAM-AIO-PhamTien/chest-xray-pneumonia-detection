@@ -1,0 +1,2 @@
+baseline,variant,n_normal_groups,fp_baseline,fp_variant,fixed_by_variant,broken_by_variant,net_fp_reduction,mcnemar_exact_p,spec_delta,spec_ci_low,spec_ci_high,auc_ci_low,auc_ci_high
+B1_resnet18_stretch_manh,densenet121_robust,225,52,44,12,4,8,0.076812744140625,0.03555555555555556,0.004444444444444362,0.07111111111111112,-0.001026660409544633,0.006009003436901033

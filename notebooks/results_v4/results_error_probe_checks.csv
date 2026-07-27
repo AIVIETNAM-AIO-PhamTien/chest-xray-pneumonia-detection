@@ -1,0 +1,5 @@
+embedding,errors_of,same_model,auc_raw,auc_residualised,n,n_fp
+resnet18,resnet18,True,0.9842491498120638,0.9831752282083408,225,74
+resnet18,stretch_manh,False,0.9524232992441084,0.9532014228546021,225,52
+stretch_manh,resnet18,False,0.9437981027385001,0.9334168605691785,225,74
+stretch_manh,stretch_manh,True,0.9776567363272566,0.9709871053801689,225,52

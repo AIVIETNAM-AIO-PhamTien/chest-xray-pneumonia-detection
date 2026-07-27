@@ -1,0 +1,13 @@
+{
+  "model": "ResNet18 v4 + DenseNet121 v5, equal probability average",
+  "members": {
+    "resnet18": "stretch + strong augmentation + weighted CE",
+    "densenet121": "stretch + strong augmentation + weighted CE"
+  },
+  "aggregation": "equal probability mean",
+  "threshold": 0.5872680097818375,
+  "threshold_source": "pooled out-of-fold, exact search over observed scores",
+  "threshold_objective": "maximise specificity at sensitivity >= 0.97",
+  "primary_unit": "filename-derived group",
+  "benchmark_status": "known engineering benchmark, repeatedly inspected; not an untouched holdout"
+}

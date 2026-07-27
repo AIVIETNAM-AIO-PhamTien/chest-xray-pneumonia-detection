@@ -9,36 +9,48 @@ roadmap, chưa được đăng ký trong code hiện tại.
 
 | Muốn gì | Đi đâu |
 |---|---|
+| **Kết quả cuối, đã đóng băng** | [`artifacts/final/`](artifacts/final/) — model card, báo cáo, hạn chế, băm SHA-256 |
+| Tính lại mọi con số từ prediction gốc | `python scripts/build_final_results.py` |
 | Chạy baseline trên Kaggle hoặc MacBook | [`notebooks/baseline_kaggle.ipynb`](notebooks/baseline_kaggle.ipynb) — tự nhận CUDA/MPS/CPU, có smoke/full mode |
-| Xem kết quả lần chạy đầy đủ mới nhất | [`notebooks/results_v4/`](notebooks/results_v4/) và [`notebooks/result/train_log_v4.txt`](notebooks/result/train_log_v4.txt) |
-| Kiểm định ghép cặp giữa các cấu hình | `python scripts/paired_factorial_tests.py` và `paired_shortcut_reliance.py` |
+| Hiểu vì sao dataset này khó hơn vẻ ngoài | [`reports/`](reports/) — audit về đặc trưng thu nhận ảnh |
+| Kiểm định ghép cặp giữa các cấu hình | `python scripts/paired_factorial_tests.py` |
 | Hiểu dataset trước khi tin số | `python -m scripts.audit_dataset --root-dir <path>` |
 | Biết vì sao có hai protocol split | [`src/splits.py`](src/splits.py) và [`docs/README.md`](docs/README.md) |
-| Tài liệu nền + review paper | [`docs/`](docs/) |
 
-## Kết quả hiện tại và cảnh báo quan trọng
+## Kết quả cuối
 
-Lần chạy đầy đủ gần nhất: 8 thí nghiệm × 5 fold, 79,1 phút trên Tesla T4.
+**ResNet18 + DenseNet121**, trung bình xác suất, ngưỡng 0,587268 khóa từ
+out-of-fold. Đơn vị đánh giá là filename-derived group.
 
-Cấu hình được OOF chọn là `resnet18` + letterbox + augment nhẹ. Trên test nó đạt
-group AUC 0,949 và **độ đặc hiệu chỉ 67,1%** — bắt được 202/203 ca viêm phổi
-nhưng báo nhầm 74/225 ca bình thường.
+| | |
+|---|---:|
+| Độ nhạy | 0,9951 (202/203) |
+| **Độ đặc hiệu** | **0,8222** (185/225) |
+| ROC-AUC | 0,9792 |
+| TN / FP / FN / TP | 185 / 40 / 1 / 202 |
 
-Ba điều cần biết trước khi dùng lại con số nào ở đây:
+So với ResNet18 đơn: từ 52 xuống 40 ca báo nhầm, không tăng ca bỏ sót.
+McNemar p = 0,0005.
 
-**Tập test không còn là holdout nguyên vẹn.** Nó đã được đọc từ lần chạy v2, và
-chính độ đặc hiệu thấp trên nó sinh ra hướng nghiên cứu hiện tại. Repo gọi nó là
-*known benchmark test*; mọi số trên nó là ước lượng **lạc quan**.
+Đầy đủ ở [`artifacts/final/reports/`](artifacts/final/reports/).
 
-**OOF gần như không phân biệt được cấu hình.** Biên độ group AUC giữa 7 cấu hình
-thật chỉ 0,0014, trong khi biên độ trên test là 0,0290 — rộng gấp 21 lần. Tệ hơn,
-trong 4 ô của thiết kế 2×2 thì thứ hạng gần như đảo ngược (Spearman −0,80): cấu
-hình thắng OOF lại đứng cuối trên test. Chia theo group chặn được rò rỉ danh
-tính nhưng **không** chặn được rò rỉ kiểu chụp.
+## Ba cảnh báo trước khi dùng lại con số nào
 
-**Tỉ lệ khung ảnh một mình đã phân loại được.** Không cần mô hình nào, AUC đạt
-0,865 trên train và 0,704 trên test. Mạnh trên train hơn test đúng là hình dạng
-của một đặc trưng tắt.
+**Tập test không còn nguyên vẹn.** Nó đã được đọc từ lần chạy v2 và định hướng
+mọi thiết kế sau đó. Repo gọi nó là *known engineering benchmark*; mọi số trên
+nó là ước lượng **lạc quan**.
+
+**Nhãn tương quan mạnh với cách chụp ảnh.** Bảng lượng tử hóa JPEG một mình xác
+định được lớp ở 96,6% ảnh development — `train/NORMAL` lưu ở quality 95,5, mọi
+nhóm khác ở 75,0. Chồng lấn giữa hai lớp theo vector nhiễu chỉ **0,4%**. Hai can
+thiệp tiền xử lý đều không gỡ được dấu vết này.
+
+**Validation nội bộ gần bão hòa.** Biên độ group AUC giữa 7 cấu hình chỉ 0,0014,
+trong khi trên test là 0,0290. Ba lần OOF nghiêng về phương án chuyển kém hơn;
+cả ba đều bị chặn bởi ràng buộc đặt trước, không phải bởi nhìn benchmark.
+
+Chi tiết ở [`reports/phase2a_revised_report.md`](reports/phase2a_revised_report.md)
+và [`artifacts/final/reports/final_limitations.md`](artifacts/final/reports/final_limitations.md).
 
 ## Protocol split
 
@@ -128,6 +140,8 @@ Chi tiết nằm trong [`notebooks/baseline_kaggle.ipynb`](notebooks/baseline_ka
   chọn MPS nếu khả dụng và mặc định chạy smoke. Có thể đặt đường dẫn rõ ràng bằng
   `DATA_ROOT_OVERRIDE` hoặc biến môi trường `CXR_DATA_ROOT`.
 - Full run gồm 8 thí nghiệm × 5 fold × tối đa 15 epoch, khoảng 80 phút trên T4.
+  Các giai đoạn sau (DenseNet, DeiT, verifier) có notebook riêng, dựng lại bằng
+  `scripts/make_notebook_*.py`.
   Dùng **Save Version → Save & Run All**; chạy interactive sẽ bị ngắt vì giới hạn
   idle 20 phút. Mac phù hợp để audit dữ liệu và smoke test.
 - Smoke chạy 2 cấu hình nhỏ đi qua cả hai chế độ resize, nên nó kiểm tra được

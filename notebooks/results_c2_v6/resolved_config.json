@@ -1,0 +1,41 @@
+{
+  "run_mode": "full",
+  "seed": 42,
+  "image_cache_size": 224,
+  "batch_size": 32,
+  "epochs": 15,
+  "learning_rate": 0.0001,
+  "weight_decay": 1e-05,
+  "patience": 5,
+  "n_folds": 5,
+  "val_fraction": 0.15,
+  "deterministic": true,
+  "threshold_objective": "sensitivity",
+  "target_sensitivity": 0.97,
+  "bootstrap_reps": 2000,
+  "augment_presets": {
+    "nhe": {
+      "rotation": 10,
+      "scale": 0.0,
+      "translate": 0.0,
+      "jitter": 0.15
+    },
+    "manh": {
+      "rotation": 30,
+      "scale": 0.2,
+      "translate": 0.1,
+      "jitter": 0.2
+    }
+  },
+  "experiments": [
+    {
+      "name": "resnet18_v6",
+      "arch": "resnet18",
+      "size": 224,
+      "aug": "manh",
+      "balancing": "weighted",
+      "resize": "stretch",
+      "hoi": "B1 với quy tắc chọn checkpoint v6"
+    }
+  ]
+}

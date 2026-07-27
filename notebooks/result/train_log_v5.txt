@@ -1,0 +1,111 @@
+runtime: Kaggle | mode: full
+device: cuda (Tesla T4) | AMP: True | workers: 2
+phiên bản: python=3.12.13 torch=2.10.0+cu128 torchvision=0.25.0+cu128 numpy=2.0.2 pandas=2.3.3 scikit-learn=1.6.1 scipy=1.16.3 pillow=11.3.0
+
+DATA_ROOT = /kaggle/input/datasets/paultimothymooney/chest-xray-pneumonia/chest_xray
+5,856 ảnh | 4,097 filename-derived groups
+
+5 fold, chia theo filename-derived group:
+  fold 0: train 4,168  val 1,064  test  624  |  group/hash ở >1 split: 0/0
+  fold 1: train 4,224  val 1,008  test  624  |  group/hash ở >1 split: 0/0
+  fold 2: train 4,165  val 1,067  test  624  |  group/hash ở >1 split: 0/0
+  fold 3: train 4,190  val 1,042  test  624  |  group/hash ở >1 split: 0/0
+  fold 4: train 4,181  val 1,051  test  624  |  group/hash ở >1 split: 0/0
+cache stretch: 294 MB cho 5,856 ảnh trong 53s
+Bắt đầu full: 1 thí nghiệm × 5 fold × tối đa 12 epoch
+
+==============================================================
+densenet121_robust  |  fold 0
+==============================================================
+densenet121 | 224px | resize stretch | augment manh | balancing weighted
+trọng số lớp: [1.908, 0.678]
+epoch  1/12  loss 0.1776  spec@sens97% 0.9588  sens 0.9715  AUC 0.9938  PR 0.9973  NLL 0.1587  Brier 0.0378  thr 0.134  lr 1.00e-04  <- best
+epoch  2/12  loss 0.0969  spec@sens97% 0.9506  sens 0.9715  AUC 0.9936  PR 0.9972  NLL 0.2086  Brier 0.0493  thr 0.058  lr 1.00e-04
+epoch  3/12  loss 0.0799  spec@sens97% 0.9877  sens 0.9715  AUC 0.9959  PR 0.9981  NLL 0.1411  Brier 0.0330  thr 0.231  lr 1.00e-04  <- best
+epoch  4/12  loss 0.0657  spec@sens97% 0.9712  sens 0.9715  AUC 0.9938  PR 0.9972  NLL 0.1464  Brier 0.0335  thr 0.224  lr 1.00e-04
+epoch  5/12  loss 0.0597  spec@sens97% 0.9918  sens 0.9715  AUC 0.9960  PR 0.9982  NLL 0.1469  Brier 0.0306  thr 0.214  lr 1.00e-04
+epoch  6/12  loss 0.0538  spec@sens97% 0.9712  sens 0.9715  AUC 0.9968  PR 0.9985  NLL 0.1902  Brier 0.0469  thr 0.050  lr 3.00e-05
+epoch  7/12  loss 0.0434  spec@sens97% 0.9835  sens 0.9715  AUC 0.9973  PR 0.9988  NLL 0.1260  Brier 0.0287  thr 0.205  lr 3.00e-05  <- best
+epoch  8/12  loss 0.0324  spec@sens97% 0.9835  sens 0.9715  AUC 0.9976  PR 0.9989  NLL 0.0886  Brier 0.0223  thr 0.367  lr 3.00e-05  <- best
+epoch  9/12  loss 0.0300  spec@sens97% 0.9918  sens 0.9715  AUC 0.9980  PR 0.9990  NLL 0.0973  Brier 0.0226  thr 0.381  lr 3.00e-05  <- best
+epoch 10/12  loss 0.0281  spec@sens97% 0.9918  sens 0.9715  AUC 0.9980  PR 0.9991  NLL 0.0873  Brier 0.0217  thr 0.315  lr 3.00e-05  <- best
+epoch 11/12  loss 0.0254  spec@sens97% 0.9918  sens 0.9715  AUC 0.9971  PR 0.9987  NLL 0.1482  Brier 0.0304  thr 0.141  lr 3.00e-05
+epoch 12/12  loss 0.0209  spec@sens97% 0.9877  sens 0.9715  AUC 0.9976  PR 0.9989  NLL 0.1756  Brier 0.0371  thr 0.088  lr 3.00e-05
+khôi phục checkpoint epoch 10, spec 0.9918, NLL 0.0873
+
+==============================================================
+densenet121_robust  |  fold 1
+==============================================================
+densenet121 | 224px | resize stretch | augment manh | balancing weighted
+trọng số lớp: [1.959, 0.671]
+epoch  1/12  loss 0.1687  spec@sens97% 0.9795  sens 0.9714  AUC 0.9961  PR 0.9982  NLL 0.2346  Brier 0.0674  thr 0.093  lr 1.00e-04  <- best
+epoch  2/12  loss 0.0909  spec@sens97% 0.9836  sens 0.9714  AUC 0.9964  PR 0.9982  NLL 0.1834  Brier 0.0498  thr 0.076  lr 1.00e-04  <- best
+epoch  3/12  loss 0.0784  spec@sens97% 0.9877  sens 0.9714  AUC 0.9972  PR 0.9986  NLL 0.1440  Brier 0.0391  thr 0.116  lr 1.00e-04  <- best
+epoch  4/12  loss 0.0638  spec@sens97% 0.9672  sens 0.9714  AUC 0.9974  PR 0.9988  NLL 0.2553  Brier 0.0651  thr 0.023  lr 1.00e-04
+epoch  5/12  loss 0.0617  spec@sens97% 0.9918  sens 0.9714  AUC 0.9981  PR 0.9991  NLL 0.2509  Brier 0.0643  thr 0.029  lr 1.00e-04
+epoch  6/12  loss 0.0532  spec@sens97% 0.9877  sens 0.9714  AUC 0.9982  PR 0.9992  NLL 0.1133  Brier 0.0304  thr 0.189  lr 1.00e-04  <- best
+epoch  7/12  loss 0.0576  spec@sens97% 0.9918  sens 0.9714  AUC 0.9981  PR 0.9991  NLL 0.1815  Brier 0.0527  thr 0.076  lr 1.00e-04
+epoch  8/12  loss 0.0548  spec@sens97% 0.9959  sens 0.9714  AUC 0.9982  PR 0.9992  NLL 0.0761  Brier 0.0213  thr 0.448  lr 1.00e-04  <- best
+epoch  9/12  loss 0.0464  spec@sens97% 0.9918  sens 0.9714  AUC 0.9988  PR 0.9994  NLL 0.1356  Brier 0.0388  thr 0.096  lr 1.00e-04
+epoch 10/12  loss 0.0357  spec@sens97% 0.9836  sens 0.9714  AUC 0.9984  PR 0.9993  NLL 0.0574  Brier 0.0164  thr 0.530  lr 1.00e-04
+epoch 11/12  loss 0.0330  spec@sens97% 0.9959  sens 0.9714  AUC 0.9990  PR 0.9995  NLL 0.0575  Brier 0.0148  thr 0.498  lr 1.00e-04  <- best
+epoch 12/12  loss 0.0264  spec@sens97% 0.9918  sens 0.9714  AUC 0.9991  PR 0.9996  NLL 0.0361  Brier 0.0098  thr 0.766  lr 1.00e-04  <- best
+khôi phục checkpoint epoch 12, spec 0.9918, NLL 0.0361
+
+==============================================================
+densenet121_robust  |  fold 2
+==============================================================
+densenet121 | 224px | resize stretch | augment manh | balancing weighted
+trọng số lớp: [1.941, 0.674]
+epoch  1/12  loss 0.1684  spec@sens97% 0.9631  sens 0.9714  AUC 0.9953  PR 0.9973  NLL 0.1117  Brier 0.0315  thr 0.222  lr 1.00e-04  <- best
+epoch  2/12  loss 0.0969  spec@sens97% 0.9836  sens 0.9714  AUC 0.9959  PR 0.9978  NLL 0.1205  Brier 0.0329  thr 0.247  lr 1.00e-04  <- best
+epoch  3/12  loss 0.0814  spec@sens97% 0.9795  sens 0.9714  AUC 0.9968  PR 0.9984  NLL 0.0796  Brier 0.0216  thr 0.408  lr 1.00e-04  <- best
+epoch  4/12  loss 0.0800  spec@sens97% 0.9672  sens 0.9714  AUC 0.9969  PR 0.9984  NLL 0.0971  Brier 0.0300  thr 0.223  lr 1.00e-04
+epoch  5/12  loss 0.0588  spec@sens97% 0.9754  sens 0.9714  AUC 0.9980  PR 0.9990  NLL 0.0744  Brier 0.0221  thr 0.345  lr 1.00e-04  <- best
+epoch  6/12  loss 0.0534  spec@sens97% 0.9918  sens 0.9714  AUC 0.9987  PR 0.9994  NLL 0.0975  Brier 0.0272  thr 0.265  lr 1.00e-04  <- best
+epoch  7/12  loss 0.0544  spec@sens97% 0.9877  sens 0.9714  AUC 0.9989  PR 0.9994  NLL 0.1036  Brier 0.0299  thr 0.115  lr 1.00e-04
+epoch  8/12  loss 0.0596  spec@sens97% 0.9959  sens 0.9714  AUC 0.9987  PR 0.9993  NLL 0.0432  Brier 0.0117  thr 0.708  lr 1.00e-04  <- best
+epoch  9/12  loss 0.0392  spec@sens97% 0.9877  sens 0.9714  AUC 0.9976  PR 0.9988  NLL 0.1384  Brier 0.0358  thr 0.120  lr 1.00e-04
+epoch 10/12  loss 0.0382  spec@sens97% 0.9836  sens 0.9714  AUC 0.9983  PR 0.9991  NLL 0.1486  Brier 0.0410  thr 0.058  lr 1.00e-04
+epoch 11/12  loss 0.0357  spec@sens97% 0.9836  sens 0.9714  AUC 0.9978  PR 0.9989  NLL 0.1012  Brier 0.0285  thr 0.279  lr 3.00e-05
+epoch 12/12  loss 0.0251  spec@sens97% 0.9918  sens 0.9714  AUC 0.9988  PR 0.9994  NLL 0.0796  Brier 0.0230  thr 0.346  lr 3.00e-05
+khôi phục checkpoint epoch 8, spec 0.9959, NLL 0.0432
+
+==============================================================
+densenet121_robust  |  fold 3
+==============================================================
+densenet121 | 224px | resize stretch | augment manh | balancing weighted
+trọng số lớp: [1.956, 0.672]
+epoch  1/12  loss 0.1644  spec@sens97% 0.9467  sens 0.9714  AUC 0.9941  PR 0.9972  NLL 0.1352  Brier 0.0370  thr 0.206  lr 1.00e-04  <- best
+epoch  2/12  loss 0.0902  spec@sens97% 0.9631  sens 0.9714  AUC 0.9954  PR 0.9978  NLL 0.0868  Brier 0.0238  thr 0.557  lr 1.00e-04  <- best
+epoch  3/12  loss 0.0816  spec@sens97% 0.9590  sens 0.9714  AUC 0.9940  PR 0.9971  NLL 0.0952  Brier 0.0255  thr 0.692  lr 1.00e-04
+epoch  4/12  loss 0.0618  spec@sens97% 0.9631  sens 0.9714  AUC 0.9953  PR 0.9975  NLL 0.0916  Brier 0.0263  thr 0.473  lr 1.00e-04
+epoch  5/12  loss 0.0462  spec@sens97% 0.9672  sens 0.9714  AUC 0.9938  PR 0.9971  NLL 0.0996  Brier 0.0269  thr 0.504  lr 3.00e-05
+epoch  6/12  loss 0.0398  spec@sens97% 0.9590  sens 0.9714  AUC 0.9950  PR 0.9976  NLL 0.1476  Brier 0.0360  thr 0.161  lr 3.00e-05
+epoch  7/12  loss 0.0379  spec@sens97% 0.9754  sens 0.9714  AUC 0.9967  PR 0.9984  NLL 0.0810  Brier 0.0223  thr 0.601  lr 3.00e-05  <- best
+epoch  8/12  loss 0.0356  spec@sens97% 0.9590  sens 0.9714  AUC 0.9959  PR 0.9980  NLL 0.0960  Brier 0.0270  thr 0.370  lr 3.00e-05
+epoch  9/12  loss 0.0276  spec@sens97% 0.9590  sens 0.9714  AUC 0.9958  PR 0.9980  NLL 0.1117  Brier 0.0292  thr 0.325  lr 3.00e-05
+epoch 10/12  loss 0.0229  spec@sens97% 0.9713  sens 0.9714  AUC 0.9964  PR 0.9983  NLL 0.0919  Brier 0.0240  thr 0.479  lr 9.00e-06
+epoch 11/12  loss 0.0212  spec@sens97% 0.9713  sens 0.9714  AUC 0.9963  PR 0.9982  NLL 0.1000  Brier 0.0252  thr 0.499  lr 9.00e-06
+epoch 12/12  loss 0.0211  spec@sens97% 0.9713  sens 0.9714  AUC 0.9966  PR 0.9983  NLL 0.1047  Brier 0.0261  thr 0.399  lr 9.00e-06
+dừng sớm ở epoch 12
+khôi phục checkpoint epoch 7, spec 0.9754, NLL 0.0810
+
+==============================================================
+densenet121_robust  |  fold 4
+==============================================================
+densenet121 | 224px | resize stretch | augment manh | balancing weighted
+trọng số lớp: [1.932, 0.675]
+epoch  1/12  loss 0.1831  spec@sens97% 0.9959  sens 0.9713  AUC 0.9979  PR 0.9990  NLL 0.0701  Brier 0.0175  thr 0.664  lr 1.00e-04  <- best
+epoch  2/12  loss 0.0816  spec@sens97% 0.9877  sens 0.9713  AUC 0.9976  PR 0.9989  NLL 0.0750  Brier 0.0204  thr 0.499  lr 1.00e-04
+epoch  3/12  loss 0.0821  spec@sens97% 0.9877  sens 0.9713  AUC 0.9973  PR 0.9987  NLL 0.2094  Brier 0.0574  thr 0.070  lr 1.00e-04
+epoch  4/12  loss 0.0674  spec@sens97% 0.9959  sens 0.9713  AUC 0.9988  PR 0.9994  NLL 0.0563  Brier 0.0157  thr 0.579  lr 1.00e-04  <- best
+epoch  5/12  loss 0.0664  spec@sens97% 0.9754  sens 0.9713  AUC 0.9975  PR 0.9988  NLL 0.0609  Brier 0.0164  thr 0.748  lr 1.00e-04
+epoch  6/12  loss 0.0543  spec@sens97% 0.9959  sens 0.9713  AUC 0.9982  PR 0.9992  NLL 0.0786  Brier 0.0206  thr 0.366  lr 1.00e-04
+epoch  7/12  loss 0.0463  spec@sens97% 0.9836  sens 0.9713  AUC 0.9955  PR 0.9978  NLL 0.1931  Brier 0.0491  thr 0.074  lr 3.00e-05
+epoch  8/12  loss 0.0380  spec@sens97% 0.9836  sens 0.9713  AUC 0.9978  PR 0.9990  NLL 0.0885  Brier 0.0238  thr 0.314  lr 3.00e-05
+epoch  9/12  loss 0.0284  spec@sens97% 0.9877  sens 0.9713  AUC 0.9984  PR 0.9992  NLL 0.0779  Brier 0.0213  thr 0.358  lr 3.00e-05
+dừng sớm ở epoch 9
+khôi phục checkpoint epoch 4, spec 0.9959, NLL 0.0563
+
+tổng thời gian: 22.6 phút (1 thí nghiệm × 5 fold)

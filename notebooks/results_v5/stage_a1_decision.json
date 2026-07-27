@@ -1,0 +1,10 @@
+{
+  "evaluation_role": "engineering_decision_on_known_benchmark",
+  "run_mode": "full",
+  "model": "densenet121_robust",
+  "keep": true,
+  "delta_specificity_vs_b1": 0.03554444444444438,
+  "delta_auc_vs_b1": 0.0022423097974821893,
+  "fp_avoided_vs_b1": 8,
+  "sensitivity": 0.9950738916256158
+}

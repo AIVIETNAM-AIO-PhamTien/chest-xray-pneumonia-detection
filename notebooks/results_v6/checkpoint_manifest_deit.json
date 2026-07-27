@@ -1,0 +1,23 @@
+{
+  "timm_version": "1.0.26",
+  "model_id": "deit_small_patch16_224.fb_in1k",
+  "pretrained": true,
+  "num_classes": 2,
+  "input_size": [
+    3,
+    224,
+    224
+  ],
+  "mean": [
+    0.485,
+    0.456,
+    0.406
+  ],
+  "std": [
+    0.229,
+    0.224,
+    0.225
+  ],
+  "parameters_millions": 21.666434,
+  "backbone_sha256": "cb489a7792932483"
+}

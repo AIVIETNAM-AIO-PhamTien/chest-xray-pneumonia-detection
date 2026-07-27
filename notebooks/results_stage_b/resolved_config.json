@@ -1,0 +1,47 @@
+{
+  "run_mode": "full",
+  "seed": 42,
+  "image_cache_size": 224,
+  "batch_size": 32,
+  "finetune_epochs": 3,
+  "hard_multiplier": 2.0,
+  "hard_fraction": 0.25,
+  "learning_rate": 1e-05,
+  "weight_decay": 1e-05,
+  "patience": 5,
+  "scheduler_patience": 2,
+  "scheduler_factor": 0.3,
+  "min_lr": 1e-06,
+  "checkpoint_tie_margin": 0.005,
+  "n_folds": 5,
+  "val_fraction": 0.15,
+  "deterministic": true,
+  "threshold_objective": "sensitivity",
+  "target_sensitivity": 0.97,
+  "bootstrap_reps": 2000,
+  "augment_presets": {
+    "nhe": {
+      "rotation": 10,
+      "scale": 0.0,
+      "translate": 0.0,
+      "jitter": 0.15
+    },
+    "manh": {
+      "rotation": 30,
+      "scale": 0.2,
+      "translate": 0.1,
+      "jitter": 0.2
+    }
+  },
+  "experiments": [
+    {
+      "name": "densenet_hn2",
+      "arch": "densenet121",
+      "size": 224,
+      "aug": "manh",
+      "balancing": "weighted",
+      "resize": "stretch",
+      "hoi": "DenseNet121 + trọng số nhóm NORMAL khó"
+    }
+  ]
+}

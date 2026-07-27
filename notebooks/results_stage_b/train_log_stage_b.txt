@@ -1,0 +1,96 @@
+runtime: Kaggle | mode: full
+device: cuda (Tesla T4) | AMP: True | workers: 2
+phiên bản: python=3.12.13 torch=2.10.0+cu128 torchvision=0.25.0+cu128 numpy=2.0.2 pandas=2.3.3 scikit-learn=1.6.1 scipy=1.16.3 pillow=11.3.0
+
+DATA_ROOT = /kaggle/input/datasets/paultimothymooney/chest-xray-pneumonia/chest_xray
+5,856 ảnh | 4,097 filename-derived groups
+
+5 fold, chia theo filename-derived group:
+  fold 0: train 4,168  val 1,064  test  624  |  group/hash ở >1 split: 0/0
+  fold 1: train 4,224  val 1,008  test  624  |  group/hash ở >1 split: 0/0
+  fold 2: train 4,165  val 1,067  test  624  |  group/hash ở >1 split: 0/0
+  fold 3: train 4,190  val 1,042  test  624  |  group/hash ở >1 split: 0/0
+  fold 4: train 4,181  val 1,051  test  624  |  group/hash ở >1 split: 0/0
+cache stretch: 294 MB cho 5,856 ảnh trong 52s
+nguồn v5: /kaggle/input/notebooks/vntinphan/model-improvement-pneumonia
+checkpoint nguồn:
+  fold 0: densenet121_robust_fold0.pth  sha256 38bb6c8c25b9383c  28.4 MB
+  fold 1: densenet121_robust_fold1.pth  sha256 c5a73086183af9ab  28.4 MB
+  fold 2: densenet121_robust_fold2.pth  sha256 1742ea09d41fb0fd  28.4 MB
+  fold 3: densenet121_robust_fold3.pth  sha256 19e64ef12d104e7a  28.4 MB
+  fold 4: densenet121_robust_fold4.pth  sha256 a15598e21fb9d9be  28.4 MB
+
+cấu hình nguồn khớp: {'arch': 'densenet121', 'size': 224, 'resize': 'stretch', 'aug': 'manh', 'balancing': 'weighted'}
+dùng lại 5 manifest của v5
+  fold 0: train 4,168 val 1,064 test 624  |  group train/val chồng nhau: 0
+  fold 1: train 4,224 val 1,008 test 624  |  group train/val chồng nhau: 0
+  fold 2: train 4,165 val 1,067 test 624  |  group train/val chồng nhau: 0
+  fold 3: train 4,190 val 1,042 test 624  |  group train/val chồng nhau: 0
+  fold 4: train 4,181 val 1,051 test 624  |  group train/val chồng nhau: 0
+teacher: 3,669 group, 1,219 NORMAL
+
+CẢNH BÁO: bảng hardness khác bản đã khóa ở commit b3036dd:
+  fold0: dựng lại 23117298e5a45623  đã khóa b6c6a6a3d8891724
+  fold1: dựng lại c457d92a83b7df20  đã khóa 25081fc3411338f3
+  fold2: dựng lại ef1fe49e2f2537b7  đã khóa 068bea3a87521f51
+  fold3: dựng lại 732b2b3c5fe04e3f  đã khóa 5bcf6bf8fb177992
+  fold4: dựng lại 956fc326994fd853  đã khóa 2c7bbc70c79d15c0
+  Nếu đây là smoke run với ít fold hơn thì bỏ qua; nếu là full run thì dữ liệu nguồn đã thay đổi.
+Bắt đầu full: 1 thí nghiệm × 5 fold × tối đa 3 epoch fine-tune
+
+==============================================================
+densenet_hn2  |  fold 0
+==============================================================
+NORMAL khó: 244 group, 286/4,168 ảnh train
+  epoch 0 fold 0: lệch tối đa 1.110e-16  tương quan 1.00000000  ĐẠT
+epoch  0 (gốc)  spec@sens97% 0.9918  AUC 0.9980  NLL 0.0873  pAUC 0.9480
+epoch  1/3  loss 0.0194  spec@sens97% 0.9959  sens 0.9715  AUC 0.9977  NLL 0.1341  pAUC 0.9300
+epoch  2/3  loss 0.0129  spec@sens97% 0.9918  sens 0.9715  AUC 0.9978  NLL 0.1234  pAUC 0.9370
+epoch  3/3  loss 0.0101  spec@sens97% 0.9959  sens 0.9715  AUC 0.9975  NLL 0.1592  pAUC 0.9208
+giữ checkpoint epoch 0 (không đổi so với v5), spec 0.9918, NLL 0.0873
+
+==============================================================
+densenet_hn2  |  fold 1
+==============================================================
+NORMAL khó: 244 group, 280/4,224 ảnh train
+  epoch 0 fold 1: lệch tối đa 1.110e-16  tương quan 1.00000000  ĐẠT
+epoch  0 (gốc)  spec@sens97% 0.9918  AUC 0.9991  NLL 0.0361  pAUC 0.9803
+epoch  1/3  loss 0.0269  spec@sens97% 0.9959  sens 0.9714  AUC 0.9993  NLL 0.0741  pAUC 0.9812
+epoch  2/3  loss 0.0147  spec@sens97% 0.9959  sens 0.9714  AUC 0.9993  NLL 0.0587  pAUC 0.9835
+epoch  3/3  loss 0.0133  spec@sens97% 0.9959  sens 0.9714  AUC 0.9991  NLL 0.0628  pAUC 0.9793
+giữ checkpoint epoch 0 (không đổi so với v5), spec 0.9918, NLL 0.0361
+
+==============================================================
+densenet_hn2  |  fold 2
+==============================================================
+NORMAL khó: 244 group, 274/4,165 ảnh train
+  epoch 0 fold 2: lệch tối đa 1.110e-16  tương quan 1.00000000  ĐẠT
+epoch  0 (gốc)  spec@sens97% 0.9959  AUC 0.9987  NLL 0.0432  pAUC 0.9852
+epoch  1/3  loss 0.0345  spec@sens97% 0.9959  sens 0.9714  AUC 0.9989  NLL 0.0704  pAUC 0.9824
+epoch  2/3  loss 0.0224  spec@sens97% 0.9959  sens 0.9714  AUC 0.9989  NLL 0.0469  pAUC 0.9840
+epoch  3/3  loss 0.0150  spec@sens97% 0.9959  sens 0.9714  AUC 0.9990  NLL 0.0602  pAUC 0.9849
+giữ checkpoint epoch 0 (không đổi so với v5), spec 0.9959, NLL 0.0432
+
+==============================================================
+densenet_hn2  |  fold 3
+==============================================================
+NORMAL khó: 244 group, 284/4,190 ảnh train
+  epoch 0 fold 3: lệch tối đa 1.110e-16  tương quan 1.00000000  ĐẠT
+epoch  0 (gốc)  spec@sens97% 0.9754  AUC 0.9967  NLL 0.0810  pAUC 0.9423
+epoch  1/3  loss 0.0220  spec@sens97% 0.9795  sens 0.9714  AUC 0.9964  NLL 0.0944  pAUC 0.9303
+epoch  2/3  loss 0.0144  spec@sens97% 0.9795  sens 0.9714  AUC 0.9961  NLL 0.1201  pAUC 0.9237
+epoch  3/3  loss 0.0137  spec@sens97% 0.9713  sens 0.9714  AUC 0.9950  NLL 0.1186  pAUC 0.9061
+giữ checkpoint epoch 0 (không đổi so với v5), spec 0.9754, NLL 0.0810
+
+==============================================================
+densenet_hn2  |  fold 4
+==============================================================
+NORMAL khó: 244 group, 280/4,181 ảnh train
+  epoch 0 fold 4: lệch tối đa 1.110e-16  tương quan 1.00000000  ĐẠT
+epoch  0 (gốc)  spec@sens97% 0.9959  AUC 0.9988  NLL 0.0563  pAUC 0.9694
+epoch  1/3  loss 0.0327  spec@sens97% 0.9959  sens 0.9713  AUC 0.9988  NLL 0.0595  pAUC 0.9730
+epoch  2/3  loss 0.0203  spec@sens97% 0.9959  sens 0.9713  AUC 0.9989  NLL 0.0717  pAUC 0.9682
+epoch  3/3  loss 0.0184  spec@sens97% 0.9959  sens 0.9713  AUC 0.9988  NLL 0.0948  pAUC 0.9657
+giữ checkpoint epoch 0 (không đổi so với v5), spec 0.9959, NLL 0.0563
+
+tổng thời gian: 6.7 phút (1 thí nghiệm × 5 fold)
