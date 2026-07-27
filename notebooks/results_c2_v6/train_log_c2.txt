@@ -1,0 +1,114 @@
+runtime: Kaggle | mode: full
+device: cuda (Tesla T4) | AMP: True | workers: 2
+phiên bản: python=3.12.13 torch=2.10.0+cu128 torchvision=0.25.0+cu128 numpy=2.0.2 pandas=2.3.3 scikit-learn=1.6.1 scipy=1.16.3 pillow=11.3.0
+
+DATA_ROOT = /kaggle/input/datasets/paultimothymooney/chest-xray-pneumonia/chest_xray
+5,856 ảnh | 4,097 filename-derived groups
+
+5 fold, chia theo filename-derived group:
+  fold 0: train 4,168  val 1,064  test  624  |  group/hash ở >1 split: 0/0
+  fold 1: train 4,224  val 1,008  test  624  |  group/hash ở >1 split: 0/0
+  fold 2: train 4,165  val 1,067  test  624  |  group/hash ở >1 split: 0/0
+  fold 3: train 4,190  val 1,042  test  624  |  group/hash ở >1 split: 0/0
+  fold 4: train 4,181  val 1,051  test  624  |  group/hash ở >1 split: 0/0
+cache stretch: 294 MB cho 5,856 ảnh trong 54s
+Bắt đầu full: 1 thí nghiệm × 5 fold × tối đa 15 epoch
+
+==============================================================
+resnet18_v6  |  fold 0
+==============================================================
+resnet18 | 224px | resize stretch | augment manh | balancing weighted | lr 1e-04 | epochs 15
+chọn checkpoint: spec@sens97 → HSAS@97 → NLL → epoch sớm hơn
+epoch  1/15  loss 0.1671  spec@sens97% 0.9342  HSAS 0.8409  AUC 0.9938  NLL 0.2858  first  <- best
+epoch  2/15  loss 0.1078  spec@sens97% 0.9424  HSAS 0.8536  AUC 0.9928  NLL 0.1516  higher_specificity  <- best
+epoch  3/15  loss 0.0857  spec@sens97% 0.9630  HSAS 0.8833  AUC 0.9954  NLL 0.1110  higher_specificity  <- best
+epoch  4/15  loss 0.0735  spec@sens97% 0.9918  HSAS 0.9398  AUC 0.9975  NLL 0.0697  higher_specificity  <- best
+epoch  5/15  loss 0.0678  spec@sens97% 0.9918  HSAS 0.9438  AUC 0.9981  NLL 0.1911  specificity_tie_higher_hsas  <- best
+epoch  6/15  loss 0.0535  spec@sens97% 0.9671  HSAS 0.8891  AUC 0.9959  NLL 0.2611  lower_specificity
+epoch  7/15  loss 0.0534  spec@sens97% 0.9588  HSAS 0.8742  AUC 0.9948  NLL 0.1418  lower_specificity
+epoch  8/15  loss 0.0612  spec@sens97% 0.9753  HSAS 0.9152  AUC 0.9957  NLL 0.0819  lower_specificity
+epoch  9/15  loss 0.0402  spec@sens97% 0.9877  HSAS 0.9366  AUC 0.9975  NLL 0.1170  specificity_tie_lower_hsas
+epoch 10/15  loss 0.0308  spec@sens97% 0.9835  HSAS 0.9502  AUC 0.9982  NLL 0.0664  lower_specificity
+dừng sớm ở epoch 10
+giữ checkpoint epoch 5 (specificity_tie_higher_hsas); quy tắc AUC cũ sẽ chọn epoch 10 — KHÁC
+
+==============================================================
+resnet18_v6  |  fold 1
+==============================================================
+resnet18 | 224px | resize stretch | augment manh | balancing weighted | lr 1e-04 | epochs 15
+chọn checkpoint: spec@sens97 → HSAS@97 → NLL → epoch sớm hơn
+epoch  1/15  loss 0.1762  spec@sens97% 0.9467  HSAS 0.8452  AUC 0.9929  NLL 0.2584  first  <- best
+epoch  2/15  loss 0.0984  spec@sens97% 0.9836  HSAS 0.9124  AUC 0.9961  NLL 0.1634  higher_specificity  <- best
+epoch  3/15  loss 0.0811  spec@sens97% 0.9836  HSAS 0.9425  AUC 0.9971  NLL 0.1392  specificity_tie_higher_hsas  <- best
+epoch  4/15  loss 0.0677  spec@sens97% 0.9713  HSAS 0.9250  AUC 0.9972  NLL 0.2067  lower_specificity
+epoch  5/15  loss 0.0724  spec@sens97% 0.9795  HSAS 0.9539  AUC 0.9977  NLL 0.1374  specificity_tie_higher_hsas  <- best
+epoch  6/15  loss 0.0672  spec@sens97% 0.9918  HSAS 0.9372  AUC 0.9965  NLL 0.2091  higher_specificity  <- best
+epoch  7/15  loss 0.0638  spec@sens97% 0.9918  HSAS 0.9597  AUC 0.9981  NLL 0.1732  specificity_tie_higher_hsas  <- best
+epoch  8/15  loss 0.0563  spec@sens97% 0.9918  HSAS 0.9346  AUC 0.9969  NLL 0.1035  specificity_tie_lower_hsas
+epoch  9/15  loss 0.0586  spec@sens97% 0.9918  HSAS 0.9575  AUC 0.9983  NLL 0.0541  specificity_tie_lower_hsas
+epoch 10/15  loss 0.0427  spec@sens97% 0.9918  HSAS 0.9473  AUC 0.9976  NLL 0.0865  specificity_tie_lower_hsas
+epoch 11/15  loss 0.0426  spec@sens97% 0.9959  HSAS 0.9680  AUC 0.9983  NLL 0.0429  specificity_tie_higher_hsas  <- best
+epoch 12/15  loss 0.0408  spec@sens97% 0.9918  HSAS 0.9734  AUC 0.9986  NLL 0.1003  specificity_tie_higher_hsas  <- best
+epoch 13/15  loss 0.0408  spec@sens97% 0.9836  HSAS 0.9601  AUC 0.9984  NLL 0.0829  lower_specificity
+epoch 14/15  loss 0.0394  spec@sens97% 0.9959  HSAS 0.9726  AUC 0.9985  NLL 0.0498  specificity_hsas_tie_lower_nll  <- best
+epoch 15/15  loss 0.0443  spec@sens97% 0.9959  HSAS 0.9636  AUC 0.9985  NLL 0.1201  specificity_tie_lower_hsas
+giữ checkpoint epoch 14 (specificity_hsas_tie_lower_nll); quy tắc AUC cũ sẽ chọn epoch 12 — KHÁC
+
+==============================================================
+resnet18_v6  |  fold 2
+==============================================================
+resnet18 | 224px | resize stretch | augment manh | balancing weighted | lr 1e-04 | epochs 15
+chọn checkpoint: spec@sens97 → HSAS@97 → NLL → epoch sớm hơn
+epoch  1/15  loss 0.1810  spec@sens97% 0.9713  HSAS 0.9369  AUC 0.9947  NLL 0.1352  first  <- best
+epoch  2/15  loss 0.1079  spec@sens97% 0.9713  HSAS 0.9388  AUC 0.9951  NLL 0.1993  all_tied_keep_earlier
+epoch  3/15  loss 0.0909  spec@sens97% 0.9795  HSAS 0.9419  AUC 0.9968  NLL 0.0669  higher_specificity  <- best
+epoch  4/15  loss 0.0893  spec@sens97% 0.9713  HSAS 0.9466  AUC 0.9969  NLL 0.0827  lower_specificity
+epoch  5/15  loss 0.0758  spec@sens97% 0.9754  HSAS 0.9532  AUC 0.9973  NLL 0.1066  specificity_tie_higher_hsas  <- best
+epoch  6/15  loss 0.0587  spec@sens97% 0.9795  HSAS 0.9566  AUC 0.9981  NLL 0.0860  specificity_tie_higher_hsas  <- best
+epoch  7/15  loss 0.0555  spec@sens97% 0.9877  HSAS 0.9706  AUC 0.9987  NLL 0.0621  higher_specificity  <- best
+epoch  8/15  loss 0.0601  spec@sens97% 0.9877  HSAS 0.9736  AUC 0.9985  NLL 0.0502  specificity_tie_higher_hsas  <- best
+epoch  9/15  loss 0.0545  spec@sens97% 0.9713  HSAS 0.9621  AUC 0.9980  NLL 0.1617  lower_specificity
+epoch 10/15  loss 0.0478  spec@sens97% 0.9836  HSAS 0.9653  AUC 0.9985  NLL 0.2161  specificity_tie_lower_hsas
+epoch 11/15  loss 0.0393  spec@sens97% 0.9918  HSAS 0.9731  AUC 0.9989  NLL 0.0711  all_tied_keep_earlier
+epoch 12/15  loss 0.0326  spec@sens97% 0.9959  HSAS 0.9767  AUC 0.9991  NLL 0.0599  higher_specificity  <- best
+epoch 13/15  loss 0.0236  spec@sens97% 0.9918  HSAS 0.9768  AUC 0.9990  NLL 0.0697  all_tied_keep_earlier
+epoch 14/15  loss 0.0240  spec@sens97% 0.9877  HSAS 0.9729  AUC 0.9988  NLL 0.0708  lower_specificity
+epoch 15/15  loss 0.0235  spec@sens97% 0.9918  HSAS 0.9733  AUC 0.9989  NLL 0.0771  specificity_tie_lower_hsas
+giữ checkpoint epoch 12 (higher_specificity); quy tắc AUC cũ sẽ chọn epoch 12 — trùng nhau
+
+==============================================================
+resnet18_v6  |  fold 3
+==============================================================
+resnet18 | 224px | resize stretch | augment manh | balancing weighted | lr 1e-04 | epochs 15
+chọn checkpoint: spec@sens97 → HSAS@97 → NLL → epoch sớm hơn
+epoch  1/15  loss 0.1827  spec@sens97% 0.9262  HSAS 0.8893  AUC 0.9947  NLL 0.0965  first  <- best
+epoch  2/15  loss 0.0897  spec@sens97% 0.9467  HSAS 0.8781  AUC 0.9941  NLL 0.1862  higher_specificity  <- best
+epoch  3/15  loss 0.0910  spec@sens97% 0.9508  HSAS 0.9041  AUC 0.9940  NLL 0.1300  specificity_tie_higher_hsas  <- best
+epoch  4/15  loss 0.0737  spec@sens97% 0.9672  HSAS 0.9364  AUC 0.9968  NLL 0.0876  higher_specificity  <- best
+epoch  5/15  loss 0.0557  spec@sens97% 0.9508  HSAS 0.9236  AUC 0.9963  NLL 0.0840  lower_specificity
+epoch  6/15  loss 0.0639  spec@sens97% 0.9426  HSAS 0.9089  AUC 0.9955  NLL 0.1562  lower_specificity
+epoch  7/15  loss 0.0528  spec@sens97% 0.9549  HSAS 0.9213  AUC 0.9953  NLL 0.1309  lower_specificity
+epoch  8/15  loss 0.0403  spec@sens97% 0.9549  HSAS 0.9291  AUC 0.9962  NLL 0.1098  lower_specificity
+epoch  9/15  loss 0.0350  spec@sens97% 0.9467  HSAS 0.9212  AUC 0.9958  NLL 0.1116  lower_specificity
+dừng sớm ở epoch 9
+giữ checkpoint epoch 4 (higher_specificity); quy tắc AUC cũ sẽ chọn epoch 4 — trùng nhau
+
+==============================================================
+resnet18_v6  |  fold 4
+==============================================================
+resnet18 | 224px | resize stretch | augment manh | balancing weighted | lr 1e-04 | epochs 15
+chọn checkpoint: spec@sens97 → HSAS@97 → NLL → epoch sớm hơn
+epoch  1/15  loss 0.1763  spec@sens97% 0.9631  HSAS 0.9026  AUC 0.9957  NLL 0.1619  first  <- best
+epoch  2/15  loss 0.0932  spec@sens97% 0.9754  HSAS 0.9375  AUC 0.9973  NLL 0.0786  higher_specificity  <- best
+epoch  3/15  loss 0.0958  spec@sens97% 0.9918  HSAS 0.9644  AUC 0.9985  NLL 0.1124  higher_specificity  <- best
+epoch  4/15  loss 0.0696  spec@sens97% 0.9918  HSAS 0.9736  AUC 0.9990  NLL 0.0416  specificity_tie_higher_hsas  <- best
+epoch  5/15  loss 0.0712  spec@sens97% 0.9959  HSAS 0.9780  AUC 0.9992  NLL 0.0463  specificity_tie_higher_hsas  <- best
+epoch  6/15  loss 0.0641  spec@sens97% 1.0000  HSAS 0.9601  AUC 0.9985  NLL 0.0615  specificity_tie_lower_hsas
+epoch  7/15  loss 0.0548  spec@sens97% 0.9836  HSAS 0.9505  AUC 0.9980  NLL 0.1508  lower_specificity
+epoch  8/15  loss 0.0590  spec@sens97% 0.9959  HSAS 0.9515  AUC 0.9982  NLL 0.0863  specificity_tie_lower_hsas
+epoch  9/15  loss 0.0355  spec@sens97% 1.0000  HSAS 0.9607  AUC 0.9986  NLL 0.0695  specificity_tie_lower_hsas
+epoch 10/15  loss 0.0369  spec@sens97% 0.9959  HSAS 0.9680  AUC 0.9988  NLL 0.0486  specificity_tie_lower_hsas
+dừng sớm ở epoch 10
+giữ checkpoint epoch 5 (specificity_tie_higher_hsas); quy tắc AUC cũ sẽ chọn epoch 5 — trùng nhau
+
+tổng thời gian: 8.7 phút (1 thí nghiệm × 5 fold)
