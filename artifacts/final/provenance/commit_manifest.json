@@ -1,6 +1,7 @@
 {
-  "commit": "62ca4f864b07e2fe96e0c816c2f115e45f7f395e",
-  "working_tree_dirty": true,
+  "commit": "cc9cf67333e28d063e8b9418a08fa111e7e57bb3",
+  "working_tree_dirty": false,
+  "working_tree_scope": "repository source excluding artifacts/final outputs",
   "frozen_bundle_complete": true,
   "frozen_bundle_issues": [],
   "sources": {
