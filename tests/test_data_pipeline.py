@@ -1,12 +1,11 @@
 from pathlib import Path
 
-import pandas as pd
 import torch
 from PIL import Image
 
 from src.data.build_loaders import DataLoaderConfig, build_dataloaders
 from src.data.imbalance import FocalLoss
-from src.data.prepare import build_manifest
+from src.data.prepare import build_manifest, infer_patient_id
 from src.data.split import create_splits
 
 
@@ -92,3 +91,13 @@ def test_focal_loss_is_finite() -> None:
     assert torch.isfinite(loss)
     loss.backward()
     assert logits.grad is not None
+
+
+def test_pneumonia_patient_id_keeps_subtype() -> None:
+    """Bacteria/virus counters overlap and must not be merged."""
+    bacteria = infer_patient_id("person1_bacteria_1.jpeg")
+    virus = infer_patient_id("person1_virus_6.jpeg")
+
+    assert bacteria == "person1_bacteria"
+    assert virus == "person1_virus"
+    assert bacteria != virus

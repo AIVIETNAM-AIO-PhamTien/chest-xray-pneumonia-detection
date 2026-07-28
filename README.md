@@ -1,17 +1,16 @@
 # Chest X-Ray Pneumonia Detection
 
 Phân loại nhị phân phát hiện viêm phổi (Pneumonia) từ ảnh X-quang ngực.
-Baseline hiện tại dùng ResNet18 pretrained ImageNet; repo cũng có `SimpleCNN` để
-làm mẫu cho model train-from-scratch. ResNet34 và các kiến trúc khác nằm trong
-roadmap, chưa được đăng ký trong code hiện tại.
+Pipeline nghiên cứu cuối ghép ResNet18 + DenseNet121 qua 5 fold mỗi kiến trúc;
+repo vẫn giữ `SimpleCNN` và CLI ResNet18 để tái hiện baseline lịch sử.
 
 ## Bắt đầu từ đâu
 
 | Muốn gì | Đi đâu |
 |---|---|
-| **Kết quả cuối, đã đóng băng** | [`artifacts/final/`](artifacts/final/) — model card, báo cáo, hạn chế, băm SHA-256 |
-| Tính lại mọi con số từ prediction gốc | `python scripts/build_final_results.py` |
-| Chạy baseline trên Kaggle hoặc MacBook | [`notebooks/baseline_kaggle.ipynb`](notebooks/baseline_kaggle.ipynb) — tự nhận CUDA/MPS/CPU, có smoke/full mode |
+| **Kết quả cuối và provenance** | [`artifacts/final/`](artifacts/final/) — model card, báo cáo, hạn chế, băm SHA-256 |
+| Dựng lại hình/XAI rồi khóa số và provenance | `python scripts/build_report_figures.py` → `python scripts/build_final_results.py` |
+| **Chạy toàn bộ nghiên cứu + Grad-CAM** | [`notebooks/chest_xray_research_complete.ipynb`](notebooks/chest_xray_research_complete.ipynb) — một luồng `reproduce`/`full`/`smoke` |
 | Hiểu vì sao dataset này khó hơn vẻ ngoài | [`reports/`](reports/) — audit về đặc trưng thu nhận ảnh |
 | Kiểm định ghép cặp giữa các cấu hình | `python scripts/paired_factorial_tests.py` |
 | Hiểu dataset trước khi tin số | `python -m scripts.audit_dataset --root-dir <path>` |
@@ -99,8 +98,9 @@ chest-xray-pneumonia-detection/
 │   ├── raw/                  # dataset gốc tải từ Kaggle (gitignored)
 │   └── processed/            # dữ liệu đã qua tiền xử lý (gitignored)
 ├── notebooks/
-│   ├── baseline_kaggle.ipynb # notebook canonical, chạy Kaggle/Mac
-│   ├── baseline-kaggle-...   # các bản đã chạy kèm output, giữ làm bằng chứng
+│   ├── chest_xray_research_complete.ipynb # notebook canonical end-to-end
+│   ├── baseline_kaggle.ipynb # baseline v4 cũ, giữ làm bằng chứng
+│   ├── *-v6.ipynb            # các stage lịch sử, không cần chạy riêng nữa
 │   ├── result/               # train_log của từng lần chạy
 │   ├── results_v4/           # CSV/JSON của lần chạy đầy đủ mới nhất
 │   └── train_baseline.ipynb  # notebook CLI cũ
@@ -109,6 +109,7 @@ chest-xray-pneumonia-detection/
 │   ├── dataset.py             # build_dataloaders (ImageFolder train/val/test)
 │   ├── transforms.py          # augmentation & preprocessing pipeline
 │   ├── models/                  # model architectures (registry pattern)
+│   ├── explainability/          # Grad-CAM dùng chung cho notebook/report
 │   ├── train.py                # training loop + CLI entrypoint
 │   ├── evaluate.py             # accuracy/precision/recall/f1/confusion matrix
 │   └── utils.py                 # set_seed, checkpoint, EarlyStopping
@@ -129,32 +130,46 @@ powershell -ExecutionPolicy Bypass -File setup.ps1
 
 `setup.ps1` tự tạo virtual environment tại `.venv/` và cài `requirements.txt`.
 
-## Chạy notebook trên Kaggle hoặc MacBook
+## Chạy notebook hợp nhất trên Kaggle hoặc MacBook
 
-Chi tiết nằm trong [`notebooks/baseline_kaggle.ipynb`](notebooks/baseline_kaggle.ipynb).
+Chi tiết nằm trong
+[`notebooks/chest_xray_research_complete.ipynb`](notebooks/chest_xray_research_complete.ipynb).
 
-- **Kaggle:** Add Data `paultimothymooney/chest-xray-pneumonia`, bật GPU T4 và
-  Internet. `RUN_MODE="auto"` chọn full; nên chạy `smoke` trước rồi mới đổi sang
-  `full`.
+- **Kaggle:** notebook dùng các module trong `src`, nên phải clone/attach
+  **toàn repo** vào `/kaggle/working/chest-xray-pneumonia-detection`, không chỉ
+  upload riêng `.ipynb`. Sau đó Add Data
+  `paultimothymooney/chest-xray-pneumonia`, bật GPU T4 và Internet. `auto` dùng
+  bộ artifact đóng băng nếu có đủ và đúng hash; nếu không, CUDA chọn `full`.
+  Nên chạy `CXR_RUN_MODE=smoke` trước khi chạy full.
 - **MacBook:** mở notebook từ repo; nó tự tìm dataset sibling `../chest_xray`,
-  chọn MPS nếu khả dụng và mặc định chạy smoke. Có thể đặt đường dẫn rõ ràng bằng
+  chọn MPS nếu khả dụng. Khi có đủ bộ artifact local, `auto` chọn `reproduce`;
+  clone mới thiếu artifact sẽ chạy `smoke`. Có thể đặt đường dẫn bằng
   `DATA_ROOT_OVERRIDE` hoặc biến môi trường `CXR_DATA_ROOT`.
-- Full run gồm 8 thí nghiệm × 5 fold × tối đa 15 epoch, khoảng 80 phút trên T4.
-  Các giai đoạn sau (DenseNet, DeiT, verifier) có notebook riêng, dựng lại bằng
-  `scripts/make_notebook_*.py`.
-  Dùng **Save Version → Save & Run All**; chạy interactive sẽ bị ngắt vì giới hạn
-  idle 20 phút. Mac phù hợp để audit dữ liệu và smoke test.
-- Smoke chạy 2 cấu hình nhỏ đi qua cả hai chế độ resize, nên nó kiểm tra được
-  đường code mà chỉ full run mới dùng tới.
+- Full run gồm ResNet18 + DenseNet121 × 5 fold. Notebook khóa ngưỡng bằng pooled
+  OOF trước khi đọc known benchmark, rồi chạy error analysis và Grad-CAM.
+- `reproduce` tái tính đúng 202/203 sensitivity và 185/225 specificity từ
+  artifact đóng băng, đồng thời kiểm tra bằng assertion.
 
-Output local nằm trong `artifacts/notebook_rerun/`; trên Kaggle nằm trong
-`/kaggle/working`. Checkpoint `.pth` không được commit — `train_log.txt` và
-`resolved_config.json` đủ để tái tạo.
+Output local nằm trong `artifacts/notebook_complete/<mode>/`; trên Kaggle nằm
+trong `/kaggle/working/chest_xray_research_complete/<mode>/`. Chế độ
+`reproduce` cần 10 checkpoint, prediction OOF/benchmark, config cuối và
+frozen-input manifest; notebook kiểm SHA-256 trước khi sử dụng. Checkpoint
+`.pth` không được commit. Một clone mới phải train lại hoặc được cung cấp trọn
+bộ artifact để tái lập Grad-CAM của mô hình cuối.
 
 ```bash
 python -m pip install -r requirements-notebook.txt
-python -m jupyter lab notebooks/baseline_kaggle.ipynb
+python -m jupyter lab notebooks/chest_xray_research_complete.ipynb
 ```
+
+Nếu bắt đầu bằng một Kaggle notebook trống, cell bootstrap tối thiểu là:
+
+```python
+!git clone https://github.com/AIVIETNAM-AIO-PhamTien/chest-xray-pneumonia-detection.git /kaggle/working/chest-xray-pneumonia-detection
+```
+
+Sau khi clone, chạy notebook chuẩn nằm trong checkout đó; branch/commit phải
+chứa cùng generator và module `src/explainability` với bản notebook.
 
 ## Config baseline
 
@@ -203,9 +218,9 @@ F1 mặc định được tính cho lớp dương `PNEUMONIA`.
 
 Trong lúc train, repo lưu `model.state_dict()` của epoch có validation F1 tốt
 nhất. Đây là file **weights-only**, không chứa optimizer, scheduler, epoch,
-config hay class mapping nên chưa hỗ trợ resume training. Sau vòng lặp, code
-hiện đánh giá weights của epoch cuối (hoặc epoch kích hoạt early stopping) trên
-test set; chưa load lại best weights trước khi test.
+config hay class mapping nên chưa hỗ trợ resume training. Epoch đầu luôn tạo
+được checkpoint, kể cả khi F1 bằng 0; sau vòng lặp, code nạp lại đúng weights
+có validation F1 tốt nhất rồi mới đánh giá test.
 
 ## Giới hạn baseline hiện tại
 
@@ -233,15 +248,16 @@ test set; chưa load lại best weights trước khi test.
   pytest tests/
   ```
 
-## Roadmap
+## Hướng tiếp theo sau pipeline cuối
 
-Sau baseline, sẽ mở rộng thử nghiệm sang:
+DenseNet121 và DeiT đã được thử; mô hình cuối hiện ghép ResNet18 + DenseNet121.
+Các bước còn giá trị nghiên cứu là:
 
-- **Dữ liệu**: tạo validation split đủ lớn từ train, ưu tiên chia theo patient
-  khi có patient ID đáng tin cậy để tránh leakage.
-- **Tiền xử lý**: CLAHE, histogram equalization, các cách resize/crop khác nhau,
-  chuẩn hoá mean/std riêng của dataset, lung segmentation/cropping.
-- **Model**: ResNet34, EfficientNet-B0, DenseNet121, Vision Transformer
-  (ViT-Base), so sánh với baseline ResNet18.
+- xác nhận trên một cohort ngoài thật sự chưa được xem và có metadata bệnh
+  nhân đáng tin cậy;
+- lặp lại nhiều seed, báo khoảng dao động thay vì chỉ một seed;
+- đánh giá calibration, subgroup và lung segmentation/cropping dưới một giao
+  thức khóa trước;
+- thực hiện đọc phim mù cho các ca báo nhầm trước khi diễn giải lâm sàng.
 
 Chi tiết đầy đủ xem [`CLAUDE.md`](CLAUDE.md).

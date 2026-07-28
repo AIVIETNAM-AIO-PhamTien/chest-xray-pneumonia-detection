@@ -13,7 +13,9 @@ IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png"}
 CLASS_TO_LABEL = {"NORMAL": 0, "PNEUMONIA": 1}
 SOURCE_SPLITS = ("train", "val", "test")
 PATIENT_PATTERNS = (
-    re.compile(r"^(person\d+)", re.IGNORECASE),
+    # The bacteria and virus counters both start at 1, so the subtype is part
+    # of the only patient-like identifier available in the filenames.
+    re.compile(r"^(person\d+_(?:bacteria|virus))_", re.IGNORECASE),
     re.compile(r"^(NORMAL2-IM-\d+)", re.IGNORECASE),
     re.compile(r"^(IM-\d+)", re.IGNORECASE),
 )

@@ -1,0 +1,5 @@
+category,group_id,filename,class_name,label,prediction,p_ensemble_group,p_ensemble_image,threshold,selection_rule
+TN,normal:normal2:316,NORMAL2-IM-0316-0001.jpeg,NORMAL,0,0,0.5858655273914337,0.5858655273914337,0.5872680097818375,group nearest locked threshold within confusion cell; image nearest group mean
+FP,normal:normal2:364,NORMAL2-IM-0364-0001.jpeg,NORMAL,0,1,0.6188008189201355,0.6188008189201355,0.5872680097818375,group nearest locked threshold within confusion cell; image nearest group mean
+FN,pneumonia:bacteria:154,person154_bacteria_728.jpeg,PNEUMONIA,1,0,0.01667892434779785,0.01667892434779785,0.5872680097818375,group nearest locked threshold within confusion cell; image nearest group mean
+TP,pneumonia:virus:1655,person1655_virus_2861.jpeg,PNEUMONIA,1,1,0.7442248046398163,0.7442248046398163,0.5872680097818375,group nearest locked threshold within confusion cell; image nearest group mean

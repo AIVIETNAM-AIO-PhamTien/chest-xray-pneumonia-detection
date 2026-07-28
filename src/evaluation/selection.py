@@ -119,7 +119,11 @@ def high_sensitivity_average_specificity(
     # Integrate along sensitivity, so the result is in specificity units.
     grid = np.linspace(min_sensitivity, 1.0, 512)
     specificity = 1.0 - np.interp(grid, tpr, fpr)
-    return float(np.trapezoid(specificity, grid) / (1.0 - min_sensitivity))
+    # Spell out the trapezoidal rule: ``np.trapezoid`` does not exist in
+    # NumPy 1.x, while ``np.trapz`` was removed in newer NumPy 2.x releases.
+    widths = np.diff(grid)
+    area = np.sum(widths * (specificity[:-1] + specificity[1:]) * 0.5)
+    return float(area / (1.0 - min_sensitivity))
 
 
 def better_checkpoint(candidate: Dict[str, float],

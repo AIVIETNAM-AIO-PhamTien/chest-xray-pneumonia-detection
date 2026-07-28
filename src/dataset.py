@@ -112,12 +112,12 @@ def find_data_root(search_paths: Union[str, Path, List[Union[str, Path]]]) -> Pa
     return min(candidates, key=lambda p: len(p.parts))
 
 
-def compute_class_weights(dataset: ImageFolder) -> torch.Tensor:
+def compute_class_weights(dataset: Dataset) -> torch.Tensor:
     """Compute inverse-frequency class weights from a labelled dataset.
 
     Args:
-        dataset: Dataset exposing ``targets`` (class index per sample) and
-            ``class_to_idx``.
+        dataset: Dataset exposing class ids through either ``targets`` (the
+            ImageFolder convention) or ``labels`` (the CXRDataset convention).
 
     Returns:
         A float tensor of per-class weights indexed by class id. Weights are
@@ -125,8 +125,19 @@ def compute_class_weights(dataset: ImageFolder) -> torch.Tensor:
         keeps the overall loss on the same scale as the unweighted run and
         makes the two directly comparable.
     """
-    counts = Counter(dataset.targets)
-    num_classes = len(dataset.class_to_idx)
+    targets = getattr(dataset, "targets", None)
+    if targets is None:
+        targets = getattr(dataset, "labels", None)
+    if targets is None:
+        raise TypeError(
+            "Dataset must expose class ids through a 'targets' or 'labels' "
+            "attribute."
+        )
+    targets = [int(label) for label in targets]
+    counts = Counter(targets)
+    num_classes = max(targets, default=-1) + 1
+    if num_classes < 1 or any(counts[index] == 0 for index in range(num_classes)):
+        raise ValueError("Class ids must be contiguous and every class must occur.")
     total = sum(counts.values())
     weights = torch.tensor(
         [total / (num_classes * counts[i]) for i in range(num_classes)],

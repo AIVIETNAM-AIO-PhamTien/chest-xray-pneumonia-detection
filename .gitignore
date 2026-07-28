@@ -34,6 +34,8 @@ notebooks/output/
 # Kết quả chạy notebook
 notebooks/results/
 artifacts/notebook_rerun/
+artifacts/notebook_complete/
+artifacts/notebook_smoke/
 
 # Checkpoint từ lần chạy notebook (nặng, tái tạo được từ log + config)
 notebooks/results_v4/*.pth
