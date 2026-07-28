@@ -1,5 +1,8 @@
 {
-  "commit": "f20f36693c439333476885a91bbaec3d7aa74ff3",
+  "commit": "62ca4f864b07e2fe96e0c816c2f115e45f7f395e",
+  "working_tree_dirty": true,
+  "frozen_bundle_complete": true,
+  "frozen_bundle_issues": [],
   "sources": {
     "resnet18_b1": "notebooks/results_v4",
     "densenet121_v5": "notebooks/results_v5",

@@ -4,10 +4,27 @@
 
 - **Bài toán**: Phân loại nhị phân (binary classification) phát hiện viêm phổi (Pneumonia) từ ảnh X-quang ngực, 2 lớp: `NORMAL` và `PNEUMONIA`.
 - **Dataset**: [Chest X-Ray Images (Pneumonia)](https://www.kaggle.com/datasets/paultimothymooney/chest-xray-pneumonia) trên Kaggle (`paultimothymooney/chest-xray-pneumonia`).
-- **Giai đoạn hiện tại**: baseline transfer learning bằng ResNet18 pretrained
-  ImageNet; repo cũng có SimpleCNN làm template train-from-scratch. ResNet34 và
-  các kiến trúc khác chưa được đăng ký, nằm trong roadmap.
+- **Giai đoạn hiện tại**: mô hình cuối là ensemble ResNet18 + DenseNet121,
+  trung bình xác suất của 10 checkpoint (5 fold mỗi kiến trúc). Ngưỡng
+  group-level `0.587268` được khóa trên pooled OOF; known benchmark đạt
+  sensitivity `202/203` và specificity `185/225`.
 - **Môi trường train**: Google Colab hoặc Kaggle Notebook (dùng GPU miễn phí), không train local.
+
+## Nguồn chạy chuẩn
+
+- Notebook end-to-end:
+  `notebooks/chest_xray_research_complete.ipynb`.
+- Ba chế độ: `reproduce` (10 checkpoint, prediction OOF/benchmark, config và
+  frozen-input manifest), `full` (2 kiến trúc × 5 fold), và `smoke` (kiểm tra
+  kỹ thuật). `auto` chỉ chọn reproduce khi đủ artifact và đúng SHA-256, rồi mới
+  xét device.
+- Notebook cũ trong `notebooks/` và `source/` chỉ là bằng chứng lịch sử/tham
+  khảo; không chạy nối tiếp chúng để tái lập report.
+- Grad-CAM dùng `src/explainability/grad_cam.py`, tính riêng từng checkpoint và
+  báo trung vị theo từng họ backbone. Không gọi heatmap là annotation tổn
+  thương hoặc lời giải thích gradient chính xác của ensemble.
+- `src.train` vẫn là CLI baseline/single-holdout; không dùng nó để tạo số cuối
+  trong report 5-fold.
 
 ## Dataset
 
@@ -19,13 +36,13 @@
     val/{NORMAL,PNEUMONIA}/
     test/{NORMAL,PNEUMONIA}/
   ```
-- **Lưu ý quan trọng**: tập `val/` gốc chỉ có 16 ảnh (8 mỗi lớp). Code hiện
-  dùng trực tiếp split này, chưa tự chia lại train/val, nên validation metric và
-  chọn checkpoint chỉ mang tính sơ bộ. Khi triển khai split mới, ưu tiên chia
-  theo patient nếu có patient ID đáng tin cậy để tránh leakage giữa train/val.
+- **Lưu ý quan trọng**: tập `val/` gốc chỉ có 16 ảnh (8 mỗi lớp).
+  `protocol: "original"` chỉ giữ để tái hiện baseline lịch sử. Notebook chuẩn
+  gộp development data rồi chia 5-fold theo filename-derived group; benchmark
+  gốc chỉ được đọc sau khi khóa ngưỡng trên pooled OOF.
 - Lớp mất cân bằng: `PNEUMONIA` nhiều hơn `NORMAL` đáng kể trong tập train.
-  Baseline hiện dùng `CrossEntropyLoss()` không weight; class weighting hoặc
-  weighted sampler là hạng mục cần thử nghiệm.
+  Config baseline và notebook chuẩn đều dùng balanced class weights trong
+  `CrossEntropyLoss`.
 - Transform luôn convert mọi ảnh về grayscale rồi tạo 3 kênh cho backbone
   pretrained ImageNet; không giả định mọi file nguồn đều được lưu single-channel
   (xem `src/transforms.py`).
@@ -44,7 +61,8 @@ chest-xray-pneumonia-detection/
 │   ├── raw/                  # dataset gốc tải từ Kaggle (gitignored)
 │   └── processed/            # dữ liệu đã qua tiền xử lý, nếu cache lại (gitignored)
 ├── notebooks/
-│   └── train_baseline.ipynb  # notebook chạy trên Colab/Kaggle
+│   ├── chest_xray_research_complete.ipynb # notebook chuẩn end-to-end
+│   └── train_baseline.ipynb  # notebook CLI cũ
 ├── src/
 │   ├── __init__.py
 │   ├── config.py              # dataclass Config + load_config từ YAML
@@ -97,9 +115,10 @@ Script `setup.ps1` sẽ tự tạo virtual environment tại `.venv/` (nếu ch�
   pytest tests/
   ```
 
-## Quy trình train trên Colab / Kaggle
+## Quy trình CLI baseline cũ trên Colab / Kaggle
 
-Chi tiết từng bước nằm trong `notebooks/train_baseline.ipynb`. Tóm tắt:
+Phần dưới chỉ mô tả CLI baseline. Nghiên cứu/report dùng notebook chuẩn nêu ở
+đầu file. Chi tiết baseline cũ nằm trong `notebooks/train_baseline.ipynb`.
 
 1. Phát hiện môi trường (Colab hay Kaggle) để trỏ đúng đường dẫn dataset.
 2. Lấy dataset:
@@ -117,19 +136,16 @@ Chi tiết từng bước nằm trong `notebooks/train_baseline.ipynb`. Tóm t�
 5. Giá trị `data.root_dir` trong config là placeholder. Truyền đường dẫn dataset
    đúng môi trường bằng `--root-dir` như notebook, hoặc cập nhật config trước
    khi gọi `run_training()`.
-6. Khi validation F1 tăng và lớn hơn `0`, weights tốt nhất được lưu vào
-   `models/baseline_best.pth`. File chỉ chứa `model.state_dict()`, không phải
-   checkpoint có thể resume. Sau vòng lặp, test hiện dùng weights của epoch cuối
-   hoặc epoch early-stop, chưa tự load lại best weights.
+6. Epoch đầu luôn lưu một weights-only checkpoint; các epoch sau ghi đè khi
+   validation F1 tăng. Sau vòng lặp, CLI nạp lại checkpoint tốt nhất trước khi
+   đánh giá test. File không chứa optimizer/scheduler nên chưa resume được.
 
-## Roadmap thử nghiệm (sau baseline)
+## Hướng tiếp theo sau pipeline cuối
 
-- **Dữ liệu**: tạo validation split đủ lớn, ưu tiên split theo patient khi có ID
-  đáng tin cậy.
-- **Tiền xử lý**: CLAHE, histogram equalization, các cách resize/crop khác nhau, chuẩn hoá theo mean/std riêng của dataset thay vì ImageNet, lung segmentation/cropping.
-- **Model**: ResNet34, EfficientNet-B0, DenseNet121, Vision Transformer
-  (ViT-Base), so sánh với baseline ResNet18.
-- Ghi lại kết quả từng thử nghiệm (config + metric) để so sánh công bằng — cân nhắc thêm bảng kết quả tổng hợp hoặc tích hợp tool tracking (vd. Weights & Biases) khi số lượng thử nghiệm tăng lên.
+- DenseNet121 và DeiT đã được thử; mô hình cuối ghép ResNet18 + DenseNet121.
+- Ưu tiên cohort ngoài chưa được xem, nhiều seed, calibration/subgroup audit,
+  lung segmentation và đọc phim mù các ca báo nhầm.
+- Mọi thử nghiệm mới phải khóa split, metric và ngưỡng trước khi đọc benchmark.
 
 ## Ghi chú khác
 

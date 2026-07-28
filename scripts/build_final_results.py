@@ -6,9 +6,9 @@ partial AUC before it became HSAS@97, and threshold search walked a grid before
 it walked every observed score. Copying figures forward would mix those
 generations in one table.
 
-So nothing is copied. Every value here is computed from raw group predictions
-through one implementation, and any number in the report that cannot be
-reproduced by running this script does not belong in the report.
+So nothing is copied. Every classification value here is computed from raw
+group predictions through one implementation. Grad-CAM figures and their
+spatial summaries are generated separately by ``build_report_figures.py``.
 
     python3 scripts/build_final_results.py
 """
@@ -28,8 +28,7 @@ from sklearn.metrics import (average_precision_score, confusion_matrix,
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from src.evaluation.selection import (  # noqa: E402
-    exact_threshold_at_sensitivity, high_sensitivity_average_specificity,
-    specificity_at_sensitivity)
+    exact_threshold_at_sensitivity, high_sensitivity_average_specificity)
 
 ROOT = Path("notebooks")
 FINAL = Path("artifacts/final")
@@ -43,6 +42,108 @@ SOURCES = {
     "densenet121_v5": (ROOT / "results_v5", "densenet121_robust"),
     "deit_small": (ROOT / "results_v6", "deit_small"),
 }
+
+
+def sha256_file(path):
+    """Hash a file without loading a large checkpoint into memory."""
+    digest = hashlib.sha256()
+    with open(path, "rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def frozen_input_manifest():
+    """Describe the exact predictions/checkpoints behind the final package.
+
+    Returns:
+        Tuple of the input-manifest frame, completeness flag and issue list.
+    """
+    v4, v5, v6 = (ROOT / "results_v4", ROOT / "results_v5", ROOT / "results_v6")
+    specs = [
+        ("resnet18_checkpoint", sorted(v4.glob("stretch_manh_fold*.pth")), 5),
+        (
+            "densenet121_checkpoint",
+            sorted(v5.glob("densenet121_robust_fold*.pth")),
+            5,
+        ),
+        (
+            "resnet18_oof_image_predictions",
+            sorted(v4.glob("validation_predictions_stretch_manh_fold*.csv")),
+            5,
+        ),
+        (
+            "densenet121_oof_image_predictions",
+            sorted(
+                v5.glob(
+                    "validation_predictions_densenet121_robust_fold*.csv"
+                )
+            ),
+            5,
+        ),
+        (
+            "deit_oof_image_predictions",
+            sorted(v6.glob("validation_predictions_deit_small_fold*.csv")),
+            5,
+        ),
+        (
+            "resnet18_benchmark_image_predictions",
+            [v4 / "predictions_known_benchmark_stretch_manh_images.csv"],
+            1,
+        ),
+        (
+            "densenet121_benchmark_image_predictions",
+            [
+                v5
+                / "predictions_known_benchmark_densenet121_robust_images.csv"
+            ],
+            1,
+        ),
+        (
+            "resnet18_benchmark_group_predictions",
+            [v4 / "predictions_known_benchmark_stretch_manh_groups.csv"],
+            1,
+        ),
+        (
+            "densenet121_oof_group_predictions",
+            [v5 / "predictions_oof_densenet121_robust_groups.csv"],
+            1,
+        ),
+        (
+            "densenet121_benchmark_group_predictions",
+            [v5 / "predictions_known_benchmark_densenet121_robust_groups.csv"],
+            1,
+        ),
+        (
+            "deit_benchmark_group_predictions",
+            [v6 / "predictions_known_benchmark_deit_small_groups.csv"],
+            1,
+        ),
+        (
+            "final_config",
+            [FINAL / "configs" / "final_model_config.json"],
+            1,
+        ),
+    ]
+    rows = []
+    issues = []
+    for role, candidates, expected_count in specs:
+        paths = [path for path in candidates if path.is_file()]
+        if len(paths) != expected_count:
+            issues.append(
+                f"{role}: expected {expected_count}, found {len(paths)}"
+            )
+        for path in paths:
+            rows.append(
+                {
+                    "role": role,
+                    "path": path.as_posix(),
+                    "sha256": sha256_file(path),
+                    "size_bytes": path.stat().st_size,
+                }
+            )
+    columns = ["role", "path", "sha256", "size_bytes"]
+    return pd.DataFrame(rows, columns=columns), not issues, issues
 
 
 def pooled_oof(directory, name):
@@ -287,23 +388,52 @@ def main():
         json.dump(config, handle, indent=2)
 
     # --- Provenance ----------------------------------------------------------
+    frozen_inputs, frozen_complete, frozen_issues = frozen_input_manifest()
+    frozen_inputs.to_csv(
+        FINAL / "provenance" / "frozen_input_manifest.csv", index=False
+    )
+
+    # Write commit metadata *before* hashing the package.  The previous order
+    # hashed the old commit_manifest.json and then replaced it, so the manifest
+    # was already stale at the moment it was produced.
+    commit = subprocess.run(["git", "rev-parse", "HEAD"], capture_output=True,
+                            text=True).stdout.strip()
+    # Generated files necessarily become dirty before they can be committed.
+    # Audit the source tree separately so the flag answers the useful question:
+    # was the code/config used for generation itself committed?
+    source_status = subprocess.run(
+        [
+            "git",
+            "status",
+            "--porcelain",
+            "--",
+            ".",
+            ":(exclude)artifacts/final/**",
+        ],
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+    dirty = bool(source_status)
+    with open(FINAL / "provenance" / "commit_manifest.json", "w") as handle:
+        json.dump({"commit": commit,
+                   "working_tree_dirty": dirty,
+                   "working_tree_scope":
+                   "repository source excluding artifacts/final outputs",
+                   "frozen_bundle_complete": frozen_complete,
+                   "frozen_bundle_issues": frozen_issues,
+                   "sources": {k: str(v[0]) for k, v in SOURCES.items()},
+                   "script": "scripts/build_final_results.py"}, handle, indent=2)
+
     manifest = []
     for path in sorted(FINAL.rglob("*")):
         if path.is_file() and path.name != "artifact_manifest.csv":
             manifest.append({
                 "path": str(path.relative_to(FINAL)),
                 "artifact_type": path.parent.name,
-                "sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
+                "sha256": sha256_file(path),
                 "size_bytes": path.stat().st_size})
     pd.DataFrame(manifest).to_csv(
         FINAL / "provenance" / "artifact_manifest.csv", index=False)
-
-    commit = subprocess.run(["git", "rev-parse", "HEAD"], capture_output=True,
-                            text=True).stdout.strip()
-    with open(FINAL / "provenance" / "commit_manifest.json", "w") as handle:
-        json.dump({"commit": commit,
-                   "sources": {k: str(v[0]) for k, v in SOURCES.items()},
-                   "script": "scripts/build_final_results.py"}, handle, indent=2)
 
     print(f"\n\nngưỡng đã khóa: {final_threshold:.6f}")
     print(f"commit: {commit[:12]}")

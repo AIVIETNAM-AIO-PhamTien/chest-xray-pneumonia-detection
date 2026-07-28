@@ -7,11 +7,13 @@ trees on the fly.
 from pathlib import Path
 from typing import Dict
 
+import pandas as pd
 import pytest
 import torch
 from PIL import Image
 from torchvision.datasets import ImageFolder
 
+from src.data.cxr_dataset import CXRDataset
 from src.dataset import compute_class_weights, find_data_root
 from src.transforms import get_eval_transforms, get_train_transforms
 
@@ -103,3 +105,16 @@ def test_compute_class_weights_preserves_loss_scale(tmp_path: Path) -> None:
 
     per_sample = torch.tensor([weights[t] for t in dataset.targets])
     assert per_sample.mean().item() == pytest.approx(1.0)
+
+
+def test_compute_class_weights_supports_cxr_dataset() -> None:
+    """The manifest-backed data pipeline exposes ``labels``, not ``targets``."""
+    frame = {
+        "path": ["a.jpeg", "b.jpeg", "c.jpeg", "d.jpeg"],
+        "label": [0, 1, 1, 1],
+    }
+    dataset = CXRDataset(pd.DataFrame(frame))
+
+    weights = compute_class_weights(dataset)
+
+    assert weights.tolist() == pytest.approx([2.0, 2.0 / 3.0])

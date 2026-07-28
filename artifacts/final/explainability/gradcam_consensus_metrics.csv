@@ -1,0 +1,9 @@
+architecture,category,group_id,filename,consensus_border_mass_15pct,mean_pixelwise_iqr
+resnet18,TN,normal:normal2:316,NORMAL2-IM-0316-0001.jpeg,0.5068506002426147,0.11973659694194794
+resnet18,FP,normal:normal2:364,NORMAL2-IM-0364-0001.jpeg,0.5582003593444824,0.2323782742023468
+resnet18,FN,pneumonia:bacteria:154,person154_bacteria_728.jpeg,0.8403485417366028,0.02590085007250309
+resnet18,TP,pneumonia:virus:1655,person1655_virus_2861.jpeg,0.33949679136276245,0.18723276257514954
+densenet121,TN,normal:normal2:316,NORMAL2-IM-0316-0001.jpeg,0.4202186167240143,0.09160155057907104
+densenet121,FP,normal:normal2:364,NORMAL2-IM-0364-0001.jpeg,0.3239263594150543,0.20167025923728943
+densenet121,FN,pneumonia:bacteria:154,person154_bacteria_728.jpeg,0.9636521935462952,0.04703260958194733
+densenet121,TP,pneumonia:virus:1655,person1655_virus_2861.jpeg,0.10850130766630173,0.1034231185913086
