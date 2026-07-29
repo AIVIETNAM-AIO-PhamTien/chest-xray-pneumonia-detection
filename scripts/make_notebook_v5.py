@@ -10,8 +10,8 @@ import json
 import re
 from pathlib import Path
 
-SOURCE = Path("notebooks/baseline_kaggle.ipynb")
-TARGET = Path("notebooks/model_improvement_v5.ipynb")
+SOURCE = Path("notebooks/legacy/baseline_kaggle.ipynb")
+TARGET = Path("notebooks/legacy/model_improvement_v5.ipynb")
 
 # Infrastructure kept verbatim from v4; the EDA and forensic cells are dropped.
 KEEP_CODE = [2, 3, 5, 7, 9, 11, 13, 34, 36, 38, 40, 42, 44, 45, 47, 49, 51]

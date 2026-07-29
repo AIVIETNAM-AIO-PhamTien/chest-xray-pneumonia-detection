@@ -14,8 +14,8 @@ import json
 import re
 from pathlib import Path
 
-SOURCE = Path("notebooks/baseline_kaggle.ipynb")
-TARGET = Path("notebooks/c2_resnet_v6.ipynb")
+SOURCE = Path("notebooks/legacy/baseline_kaggle.ipynb")
+TARGET = Path("notebooks/legacy/c2_resnet_v6.ipynb")
 
 source = json.load(open(SOURCE))
 original = {i: "".join(c["source"]) for i, c in enumerate(source["cells"])}
