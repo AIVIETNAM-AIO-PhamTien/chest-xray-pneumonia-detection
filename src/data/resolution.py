@@ -26,8 +26,7 @@ BOTTLENECKS: Dict[str, Optional[float]] = {
 }
 
 
-def apply_bottleneck(image: Image.Image,
-                     megapixels: Optional[float]) -> Image.Image:
+def apply_bottleneck(image: Image.Image, megapixels: Optional[float]) -> Image.Image:
     """Reduce an image to a pixel-count ceiling, preserving aspect ratio.
 
     Args:
@@ -48,8 +47,7 @@ def apply_bottleneck(image: Image.Image,
     return image.resize((width, height), Image.Resampling.BILINEAR)
 
 
-def would_upsample(width: int, height: int,
-                   megapixels: Optional[float]) -> bool:
+def would_upsample(width: int, height: int, megapixels: Optional[float]) -> bool:
     """Whether an image is already below a ceiling and so is left alone.
 
     Args:

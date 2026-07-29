@@ -46,11 +46,14 @@ class CXRDataset(Dataset):
         self.df["label"] = labels
 
         if verify_paths:
-            missing_paths = [str(path) for path in self.resolved_paths if not path.is_file()]
+            missing_paths = [
+                str(path) for path in self.resolved_paths if not path.is_file()
+            ]
             if missing_paths:
                 preview = missing_paths[:5]
                 raise FileNotFoundError(
-                    f"{len(missing_paths)} image paths do not exist. First examples: {preview}"
+                    f"{len(missing_paths)} image paths do not exist. "
+                    f"First examples: {preview}"
                 )
 
     def __len__(self) -> int:

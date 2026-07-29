@@ -23,7 +23,9 @@ def _as_label_tensor(labels: TensorLike) -> torch.Tensor:
     return values
 
 
-def count_classes(labels: TensorLike, num_classes: Optional[int] = None) -> torch.Tensor:
+def count_classes(
+    labels: TensorLike, num_classes: Optional[int] = None
+) -> torch.Tensor:
     labels_t = _as_label_tensor(labels)
     inferred = int(labels_t.max().item()) + 1
     if num_classes is None:

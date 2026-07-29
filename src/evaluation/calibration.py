@@ -18,7 +18,7 @@ because the mean of calibrated scores is not the calibrated mean.
 from typing import Callable, Dict
 
 import numpy as np
-from scipy.optimize import minimize_scalar, minimize
+from scipy.optimize import minimize, minimize_scalar
 from sklearn.isotonic import IsotonicRegression
 
 EPS = 1e-7
@@ -66,8 +66,7 @@ def _nll(labels: np.ndarray, probs: np.ndarray) -> float:
         Mean NLL in nats.
     """
     probs = np.clip(probs, EPS, 1.0 - EPS)
-    return float(-np.mean(labels * np.log(probs)
-                          + (1 - labels) * np.log(1.0 - probs)))
+    return float(-np.mean(labels * np.log(probs) + (1 - labels) * np.log(1.0 - probs)))
 
 
 def fit_identity(labels: np.ndarray, probs: np.ndarray) -> Callable:
@@ -97,8 +96,9 @@ def fit_temperature(labels: np.ndarray, probs: np.ndarray) -> Callable:
         Calibrator mapping probabilities to probabilities.
     """
     z = _logit(probs)
-    result = minimize_scalar(lambda t: _nll(labels, _sigmoid(z / t)),
-                             bounds=(0.02, 100.0), method="bounded")
+    result = minimize_scalar(
+        lambda t: _nll(labels, _sigmoid(z / t)), bounds=(0.02, 100.0), method="bounded"
+    )
     temperature = float(result.x)
     return lambda p: _sigmoid(_logit(p) / temperature)
 
@@ -118,8 +118,9 @@ def fit_intercept(labels: np.ndarray, probs: np.ndarray) -> Callable:
         Calibrator mapping probabilities to probabilities.
     """
     z = _logit(probs)
-    result = minimize_scalar(lambda b: _nll(labels, _sigmoid(z + b)),
-                            bounds=(-25.0, 25.0), method="bounded")
+    result = minimize_scalar(
+        lambda b: _nll(labels, _sigmoid(z + b)), bounds=(-25.0, 25.0), method="bounded"
+    )
     bias = float(result.x)
     return lambda p: _sigmoid(_logit(p) + bias)
 
@@ -135,9 +136,12 @@ def fit_platt(labels: np.ndarray, probs: np.ndarray) -> Callable:
         Calibrator mapping probabilities to probabilities.
     """
     z = _logit(probs)
-    result = minimize(lambda w: _nll(labels, _sigmoid(w[0] * z + w[1])),
-                      x0=np.array([1.0, 0.0]), method="Nelder-Mead",
-                      options={"maxiter": 4000, "xatol": 1e-8, "fatol": 1e-10})
+    result = minimize(
+        lambda w: _nll(labels, _sigmoid(w[0] * z + w[1])),
+        x0=np.array([1.0, 0.0]),
+        method="Nelder-Mead",
+        options={"maxiter": 4000, "xatol": 1e-8, "fatol": 1e-10},
+    )
     slope, bias = float(result.x[0]), float(result.x[1])
     return lambda p: _sigmoid(slope * _logit(p) + bias)
 
@@ -163,9 +167,12 @@ def fit_beta(labels: np.ndarray, probs: np.ndarray) -> Callable:
     def objective(w):
         return _nll(labels, _sigmoid(features @ w[:2] + w[2]))
 
-    result = minimize(objective, x0=np.array([1.0, 1.0, 0.0]),
-                      method="Nelder-Mead",
-                      options={"maxiter": 6000, "xatol": 1e-8, "fatol": 1e-10})
+    result = minimize(
+        objective,
+        x0=np.array([1.0, 1.0, 0.0]),
+        method="Nelder-Mead",
+        options={"maxiter": 6000, "xatol": 1e-8, "fatol": 1e-10},
+    )
     a, b, c = (float(v) for v in result.x)
 
     def calibrate(q):
@@ -191,8 +198,7 @@ def fit_isotonic(labels: np.ndarray, probs: np.ndarray) -> Callable:
     """
     model = IsotonicRegression(y_min=0.0, y_max=1.0, out_of_bounds="clip")
     model.fit(np.asarray(probs, dtype=float), np.asarray(labels, dtype=float))
-    return lambda p: np.clip(model.predict(np.asarray(p, dtype=float)),
-                             EPS, 1.0 - EPS)
+    return lambda p: np.clip(model.predict(np.asarray(p, dtype=float)), EPS, 1.0 - EPS)
 
 
 CALIBRATORS: Dict[str, Callable] = {
@@ -218,8 +224,9 @@ def brier(labels: np.ndarray, probs: np.ndarray) -> float:
     Returns:
         Brier score; lower is better.
     """
-    return float(np.mean((np.asarray(probs, dtype=float)
-                          - np.asarray(labels, dtype=float)) ** 2))
+    return float(
+        np.mean((np.asarray(probs, dtype=float) - np.asarray(labels, dtype=float)) ** 2)
+    )
 
 
 def log_loss(labels: np.ndarray, probs: np.ndarray) -> float:
@@ -279,7 +286,8 @@ def ece_adaptive(labels: np.ndarray, probs: np.ndarray, bins: int = 15) -> float
     for chunk in np.array_split(order, min(bins, len(order))):
         if len(chunk):
             total += (len(chunk) / len(probs)) * abs(
-                probs[chunk].mean() - labels[chunk].mean())
+                probs[chunk].mean() - labels[chunk].mean()
+            )
     return float(total)
 
 
@@ -299,15 +307,21 @@ def calibration_curve_fit(labels: np.ndarray, probs: np.ndarray) -> Dict[str, fl
     """
     z = _logit(probs)
     labels = np.asarray(labels, dtype=float)
-    result = minimize(lambda w: _nll(labels, _sigmoid(w[0] * z + w[1])),
-                      x0=np.array([1.0, 0.0]), method="Nelder-Mead",
-                      options={"maxiter": 4000})
-    return {"calibration_slope": float(result.x[0]),
-            "calibration_intercept": float(result.x[1])}
+    result = minimize(
+        lambda w: _nll(labels, _sigmoid(w[0] * z + w[1])),
+        x0=np.array([1.0, 0.0]),
+        method="Nelder-Mead",
+        options={"maxiter": 4000},
+    )
+    return {
+        "calibration_slope": float(result.x[0]),
+        "calibration_intercept": float(result.x[1]),
+    }
 
 
-def threshold_at_sensitivity(labels: np.ndarray, probs: np.ndarray,
-                             target: float = 0.97) -> float:
+def threshold_at_sensitivity(
+    labels: np.ndarray, probs: np.ndarray, target: float = 0.97
+) -> float:
     """Highest threshold still meeting a minimum sensitivity.
 
     Chooses among observed scores rather than a grid, so the returned value is
@@ -330,9 +344,9 @@ def threshold_at_sensitivity(labels: np.ndarray, probs: np.ndarray,
     return float(max(feasible)) if feasible else 0.0
 
 
-def monotonic_invariance_check(labels: np.ndarray, probs: np.ndarray,
-                               calibrator: Callable,
-                               target: float = 0.97) -> bool:
+def monotonic_invariance_check(
+    labels: np.ndarray, probs: np.ndarray, calibrator: Callable, target: float = 0.97
+) -> bool:
     """Verify a monotonic calibrator leaves reselected decisions untouched.
 
     Guards the reading of every post-ensemble result: if this fails, a
@@ -350,5 +364,4 @@ def monotonic_invariance_check(labels: np.ndarray, probs: np.ndarray,
     raw_threshold = threshold_at_sensitivity(labels, probs, target)
     calibrated = calibrator(probs)
     cal_threshold = threshold_at_sensitivity(labels, calibrated, target)
-    return bool(np.array_equal(probs >= raw_threshold,
-                               calibrated >= cal_threshold))
+    return bool(np.array_equal(probs >= raw_threshold, calibrated >= cal_threshold))

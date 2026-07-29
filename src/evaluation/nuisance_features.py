@@ -73,15 +73,24 @@ def _geometry(gray: np.ndarray) -> Dict[str, float]:
 
     box_height, box_width = bottom - top + 1, right - left + 1
     quarter_h, quarter_w = max(height // 4, 1), max(width // 4, 1)
-    centre = gray[quarter_h:height - quarter_h, quarter_w:width - quarter_w]
-    border = np.concatenate([gray[:quarter_h].ravel(), gray[-quarter_h:].ravel(),
-                             gray[:, :quarter_w].ravel(),
-                             gray[:, -quarter_w:].ravel()])
+    centre = gray[quarter_h : height - quarter_h, quarter_w : width - quarter_w]
+    border = np.concatenate(
+        [
+            gray[:quarter_h].ravel(),
+            gray[-quarter_h:].ravel(),
+            gray[:, :quarter_w].ravel(),
+            gray[:, -quarter_w:].ravel(),
+        ]
+    )
     corner = max(min(height, width) // 10, 4)
-    corners = np.array([gray[:corner, :corner].mean(),
-                        gray[:corner, -corner:].mean(),
-                        gray[-corner:, :corner].mean(),
-                        gray[-corner:, -corner:].mean()])
+    corners = np.array(
+        [
+            gray[:corner, :corner].mean(),
+            gray[:corner, -corner:].mean(),
+            gray[-corner:, :corner].mean(),
+            gray[-corner:, -corner:].mean(),
+        ]
+    )
 
     return {
         "width": float(width),
@@ -123,12 +132,13 @@ def _photometry(gray: np.ndarray) -> Dict[str, float]:
     return {
         "intensity_mean": mean,
         "intensity_std": std,
-        **{f"intensity_p{int(q)}": float(v)
-           for q, v in zip([1, 5, 25, 50, 75, 95, 99], percentiles)},
+        **{
+            f"intensity_p{int(q)}": float(v)
+            for q, v in zip([1, 5, 25, 50, 75, 95, 99], percentiles)
+        },
         "dynamic_range": float(percentiles[6] - percentiles[0]),
         "iqr": float(percentiles[4] - percentiles[2]),
-        "histogram_entropy": float(-(probabilities
-                                     * np.log2(probabilities)).sum()),
+        "histogram_entropy": float(-(probabilities * np.log2(probabilities)).sum()),
         "skewness": float(np.mean((centred / scale) ** 3)),
         "kurtosis": float(np.mean((centred / scale) ** 4) - 3.0),
         "near_black_frac": float((gray <= 10).mean()),
@@ -156,11 +166,18 @@ def _quality(gray: np.ndarray, file_size: int) -> Dict[str, float]:
     # what survives is dominated by pixel noise rather than anatomy.
     kernel = np.array([[1.0, -2.0, 1.0], [-2.0, 4.0, -2.0], [1.0, -2.0, 1.0]])
     residual = ndimage.convolve(image, kernel, mode="reflect")
-    noise = (np.abs(residual).mean() * np.sqrt(np.pi / 2.0)
-             / (6.0 * max(np.prod(gray.shape) ** 0.0, 1.0)))
+    noise = (
+        np.abs(residual).mean()
+        * np.sqrt(np.pi / 2.0)
+        / (6.0 * max(np.prod(gray.shape) ** 0.0, 1.0))
+    )
 
-    small = np.asarray(Image.fromarray(gray).resize(
-        (NORMALISED_SIDE, NORMALISED_SIDE), Image.BILINEAR), dtype=np.float64)
+    small = np.asarray(
+        Image.fromarray(gray).resize(
+            (NORMALISED_SIDE, NORMALISED_SIDE), Image.BILINEAR
+        ),
+        dtype=np.float64,
+    )
     spectrum = np.abs(np.fft.fftshift(np.fft.fft2(small - small.mean())))
     grid = np.arange(NORMALISED_SIDE) - NORMALISED_SIDE / 2
     radius = np.hypot(*np.meshgrid(grid, grid, indexing="ij"))
@@ -179,15 +196,13 @@ def _quality(gray: np.ndarray, file_size: int) -> Dict[str, float]:
     pixels = float(gray.size)
     return {
         "laplacian_variance": float(laplacian.var()),
-        "tenengrad": float((gradient ** 2).mean()),
-        "edge_density": float((gradient > gradient.mean()
-                               + gradient.std()).mean()),
+        "tenengrad": float((gradient**2).mean()),
+        "edge_density": float((gradient > gradient.mean() + gradient.std()).mean()),
         "noise_estimate": float(noise),
         "unique_gray_levels": float(len(np.unique(gray))),
         "file_size_bytes": float(file_size),
         "file_size_per_pixel": float(file_size / pixels),
-        "hf_energy_frac_norm256": float(spectrum[high].sum()
-                                        / max(total_energy, 1e-9)),
+        "hf_energy_frac_norm256": float(spectrum[high].sum() / max(total_energy, 1e-9)),
         "blockiness_norm256": float(blockiness),
     }
 
@@ -204,29 +219,64 @@ def extract(path: str) -> Dict[str, float]:
     location = Path(path)
     with Image.open(location) as handle:
         gray = np.asarray(handle.convert("L"), dtype=np.uint8)
-    return {"path": str(location),
-            **_geometry(gray),
-            **_photometry(gray),
-            **_quality(gray, location.stat().st_size)}
+    return {
+        "path": str(location),
+        **_geometry(gray),
+        **_photometry(gray),
+        **_quality(gray, location.stat().st_size),
+    }
 
 
 #: Pre-registered families. Declared here so the audit cannot quietly regroup
 #: features after seeing which ones separate the domains.
 FAMILIES = {
-    "geometry": ["width", "height", "log_area", "aspect", "fg_box_width_frac",
-                 "fg_box_height_frac", "fg_occupancy", "fg_box_occupancy",
-                 "margin_top_frac", "margin_bottom_frac", "margin_left_frac",
-                 "margin_right_frac", "background_frac",
-                 "centre_border_contrast", "corner_uniformity", "corner_mean"],
-    "photometry": ["intensity_mean", "intensity_std", "intensity_p1",
-                   "intensity_p5", "intensity_p25", "intensity_p50",
-                   "intensity_p75", "intensity_p95", "intensity_p99",
-                   "dynamic_range", "iqr", "histogram_entropy", "skewness",
-                   "kurtosis", "near_black_frac", "near_white_frac"],
-    "quality": ["laplacian_variance", "tenengrad", "edge_density",
-                "noise_estimate", "unique_gray_levels", "file_size_bytes",
-                "file_size_per_pixel", "hf_energy_frac_norm256",
-                "blockiness_norm256"],
+    "geometry": [
+        "width",
+        "height",
+        "log_area",
+        "aspect",
+        "fg_box_width_frac",
+        "fg_box_height_frac",
+        "fg_occupancy",
+        "fg_box_occupancy",
+        "margin_top_frac",
+        "margin_bottom_frac",
+        "margin_left_frac",
+        "margin_right_frac",
+        "background_frac",
+        "centre_border_contrast",
+        "corner_uniformity",
+        "corner_mean",
+    ],
+    "photometry": [
+        "intensity_mean",
+        "intensity_std",
+        "intensity_p1",
+        "intensity_p5",
+        "intensity_p25",
+        "intensity_p50",
+        "intensity_p75",
+        "intensity_p95",
+        "intensity_p99",
+        "dynamic_range",
+        "iqr",
+        "histogram_entropy",
+        "skewness",
+        "kurtosis",
+        "near_black_frac",
+        "near_white_frac",
+    ],
+    "quality": [
+        "laplacian_variance",
+        "tenengrad",
+        "edge_density",
+        "noise_estimate",
+        "unique_gray_levels",
+        "file_size_bytes",
+        "file_size_per_pixel",
+        "hf_energy_frac_norm256",
+        "blockiness_norm256",
+    ],
 }
 
 ALL_FEATURES = [name for names in FAMILIES.values() for name in names]

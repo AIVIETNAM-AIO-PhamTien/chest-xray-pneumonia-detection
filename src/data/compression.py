@@ -39,8 +39,9 @@ def qtable_hash(tables: Dict[int, Sequence[int]]) -> str:
         First twelve hex characters of the SHA-256 digest.
     """
     serialised = {str(k): list(v) for k, v in tables.items()}
-    return hashlib.sha256(
-        json.dumps(serialised, sort_keys=True).encode()).hexdigest()[:12]
+    return hashlib.sha256(json.dumps(serialised, sort_keys=True).encode()).hexdigest()[
+        :12
+    ]
 
 
 def read_qtable(path: Path) -> List[int]:
@@ -72,8 +73,9 @@ def canonical_qtable(quality: int) -> List[int]:
     """
     probe = Image.fromarray(np.full((64, 64), 128, dtype=np.uint8), mode="L")
     buffer = BytesIO()
-    probe.save(buffer, format="JPEG", quality=quality, optimize=False,
-               progressive=False)
+    probe.save(
+        buffer, format="JPEG", quality=quality, optimize=False, progressive=False
+    )
     buffer.seek(0)
     with Image.open(buffer) as handle:
         return list(handle.quantization[0])
@@ -91,8 +93,13 @@ def roundtrip(array: np.ndarray, table: Sequence[int]) -> np.ndarray:
     """
     buffer = BytesIO()
     Image.fromarray(array, mode="L").save(
-        buffer, format="JPEG", qtables=[list(table)], optimize=False,
-        progressive=False, subsampling=0)
+        buffer,
+        format="JPEG",
+        qtables=[list(table)],
+        optimize=False,
+        progressive=False,
+        subsampling=0,
+    )
     buffer.seek(0)
     with Image.open(buffer) as handle:
         return np.asarray(handle.convert("L"), dtype=np.uint8)
@@ -113,15 +120,24 @@ def verify_roundtrip(array: np.ndarray, table: Sequence[int]) -> Dict[str, objec
     """
     buffer = BytesIO()
     Image.fromarray(array, mode="L").save(
-        buffer, format="JPEG", qtables=[list(table)], optimize=False,
-        progressive=False, subsampling=0)
+        buffer,
+        format="JPEG",
+        qtables=[list(table)],
+        optimize=False,
+        progressive=False,
+        subsampling=0,
+    )
     buffer.seek(0)
     with Image.open(buffer) as handle:
-        return {"qtable_hash": qtable_hash(handle.quantization),
-                "size": handle.size, "mode": handle.mode,
-                "progressive": bool(handle.info.get("progressive")
-                                    or handle.info.get("progression")),
-                "bytes": buffer.getbuffer().nbytes}
+        return {
+            "qtable_hash": qtable_hash(handle.quantization),
+            "size": handle.size,
+            "mode": handle.mode,
+            "progressive": bool(
+                handle.info.get("progressive") or handle.info.get("progression")
+            ),
+            "bytes": buffer.getbuffer().nbytes,
+        }
 
 
 def resize_for_cache(image: Image.Image, size: int, mode: str) -> np.ndarray:
@@ -153,8 +169,9 @@ def resize_for_cache(image: Image.Image, size: int, mode: str) -> np.ndarray:
     return np.asarray(canvas)
 
 
-def standardised_cache_entry(path: str, size: int, mode: str,
-                             table: Sequence[int]) -> np.ndarray:
+def standardised_cache_entry(
+    path: str, size: int, mode: str, table: Sequence[int]
+) -> np.ndarray:
     """Produce one cache entry under the standardised encoding.
 
     Order matters. Geometry is applied first so the encoder always sees the

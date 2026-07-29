@@ -81,8 +81,9 @@ def test_standardising_to_the_coarser_level_converges_two_encodings(textured):
     before = np.abs(fine.astype(float) - coarse.astype(float)).mean()
 
     table = canonical_qtable(75)
-    after = np.abs(roundtrip(fine, table).astype(float)
-                   - roundtrip(coarse, table).astype(float)).mean()
+    after = np.abs(
+        roundtrip(fine, table).astype(float) - roundtrip(coarse, table).astype(float)
+    ).mean()
     assert after < before
 
 
@@ -98,8 +99,9 @@ def test_standardising_to_an_intermediate_level_does_not_converge(textured):
     before = np.abs(fine.astype(float) - coarse.astype(float)).mean()
 
     table = canonical_qtable(85)
-    after = np.abs(roundtrip(fine, table).astype(float)
-                   - roundtrip(coarse, table).astype(float)).mean()
+    after = np.abs(
+        roundtrip(fine, table).astype(float) - roundtrip(coarse, table).astype(float)
+    ).mean()
     assert after >= before
 
 
