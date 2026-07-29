@@ -1,3 +1,9 @@
+> **Provenance:** bản sao đóng băng (byte-for-byte, MD5 khớp) của
+> `paper/tonghop2.md` (nằm ngoài git repo này, trong `module2/paper/`, không
+> có version control riêng). Sửa ở file nguồn trong `paper/` rồi copy lại đây
+> nếu cần cập nhật. `paper/tonghop.md` là một bản nháp sớm hơn, ngắn hơn, khác
+> nội dung file này — không phải bản cũ của cùng một file.
+
 MICROWAVE RESEARCH TEAM
 A SOTA Survey 
 

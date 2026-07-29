@@ -56,31 +56,40 @@ chest-xray-pneumonia-detection/
 ├── setup.ps1                 # tự tạo .venv + cài requirements (local dev, Windows)
 ├── .gitignore
 ├── configs/
-│   └── baseline.yaml         # hyperparameters cho baseline
+│   ├── baseline.yaml         # hyperparameters cho baseline lịch sử
+│   ├── protocol_a.yaml       # split image-level
+│   └── protocol_b.yaml       # split patient-grouped (default)
 ├── data/
 │   ├── raw/                  # dataset gốc tải từ Kaggle (gitignored)
 │   └── processed/            # dữ liệu đã qua tiền xử lý, nếu cache lại (gitignored)
 ├── notebooks/
 │   ├── chest_xray_research_complete.ipynb # notebook chuẩn end-to-end
-│   └── train_baseline.ipynb  # notebook CLI cũ
+│   └── legacy/               # các notebook lịch sử (v2-v6, stage-b, deit...)
 ├── src/
 │   ├── __init__.py
 │   ├── config.py              # dataclass Config + load_config từ YAML
-│   ├── dataset.py             # ImageFolder cho split train/val/test có sẵn
-│   ├── transforms.py          # augmentation & preprocessing pipeline
+│   ├── dataset.py             # pipeline canonical: find_data_root, build_dataloaders
+│   │                         # (ImageFolder), compute_class_weights
+│   ├── transforms.py          # augmentation & preprocessing của pipeline canonical
+│   ├── splits.py               # build_manifest/make_splits (protocol A/B) — dùng bởi
+│   │                         # cả notebook canonical và src/train.py
+│   ├── data/                   # pipeline riêng cho CLI baseline của src/train.py
+│   │                         # (CXRDataset, build_loaders, transforms, imbalance);
+│   │                         # xem src/data/README.md — KHÔNG dùng để tạo số report
+│   ├── evaluation/              # calibration, label_shift, nuisance_features, selection
 │   ├── models/                # model architectures (registry pattern)
 │   │   ├── registry.py        # register_model decorator + build_model
 │   │   ├── resnet18.py        # transfer-learning ResNet-18
 │   │   └── simple_cnn.py      # example from-scratch CNN (template)
-│   ├── train.py                # training loop + CLI entrypoint
+│   ├── explainability/          # Grad-CAM dùng chung cho notebook/report
+│   ├── train.py                # training loop CLI baseline (không dùng cho số report)
 │   ├── evaluate.py             # accuracy/precision/recall/f1/confusion matrix
 │   └── utils.py                 # set_seed, checkpoint, EarlyStopping
 ├── models/                     # checkpoint đã train (gitignored)
 ├── outputs/
 │   ├── logs/                   # log training (gitignored)
 │   └── figures/                # biểu đồ, confusion matrix... (gitignored)
-└── tests/
-    └── test_dataset.py         # smoke test cho transforms
+└── tests/                       # 1 file test theo mỗi module trong src/
 ```
 
 ## Setup môi trường local (Windows)

@@ -1,3 +1,11 @@
+> **Provenance:** bản sao đóng băng (byte-for-byte, MD5 khớp) của
+> `paper/tong_hop_chi_tiet_chest_xray_pneumonia.md` (nằm ngoài git repo này,
+> trong `module2/paper/`, không có version control riêng). Sửa ở file nguồn
+> trong `paper/` rồi copy lại đây nếu cần cập nhật — đừng sửa trực tiếp ở đây
+> mà không đồng bộ ngược, hai bản sẽ lệch nhau âm thầm. Các link nội bộ
+> `./tonghop.md` / `./tonghop2.md` bên dưới trỏ tới file trong `paper/`, không
+> tồn tại trong `docs/`.
+
 # Handbook: Deep Learning cho phân loại viêm phổi trên ảnh X-quang ngực
 
 > Tài liệu tổng hợp nội bộ dành cho nhóm thực hiện project **Chest X-ray Pneumonia Classification**.
