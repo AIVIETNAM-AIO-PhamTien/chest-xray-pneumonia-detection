@@ -10,8 +10,8 @@ import json
 import re
 from pathlib import Path
 
-SOURCE = Path("notebooks/model-improvement-pneumonia.ipynb")
-TARGET = Path("notebooks/model_improvement_deit_v6.ipynb")
+SOURCE = Path("notebooks/legacy/model-improvement-pneumonia.ipynb")
+TARGET = Path("notebooks/legacy/model_improvement_deit_v6.ipynb")
 
 source = json.load(open(SOURCE))
 original = {i: "".join(c["source"]) for i, c in enumerate(source["cells"])}

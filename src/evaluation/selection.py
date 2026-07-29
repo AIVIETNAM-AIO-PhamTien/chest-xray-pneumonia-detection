@@ -23,8 +23,9 @@ SPECIFICITY_TIE = 0.005
 HSAS_TIE = 0.002
 
 
-def exact_threshold_at_sensitivity(labels: np.ndarray, probs: np.ndarray,
-                                   target: float = 0.97) -> float:
+def exact_threshold_at_sensitivity(
+    labels: np.ndarray, probs: np.ndarray, target: float = 0.97
+) -> float:
     """Highest observed score that still meets a minimum sensitivity.
 
     Every distinct probability is considered rather than a fixed grid. At group
@@ -48,8 +49,9 @@ def exact_threshold_at_sensitivity(labels: np.ndarray, probs: np.ndarray,
     return float(feasible.max()) if len(feasible) else 0.0
 
 
-def specificity_at_sensitivity(labels: np.ndarray, probs: np.ndarray,
-                               target: float = 0.97):
+def specificity_at_sensitivity(
+    labels: np.ndarray, probs: np.ndarray, target: float = 0.97
+):
     """Best specificity reachable while holding a minimum sensitivity.
 
     Args:
@@ -68,8 +70,8 @@ def specificity_at_sensitivity(labels: np.ndarray, probs: np.ndarray,
 
 
 def high_sensitivity_average_specificity(
-        labels: np.ndarray, probs: np.ndarray,
-        min_sensitivity: float = 0.97) -> float:
+    labels: np.ndarray, probs: np.ndarray, min_sensitivity: float = 0.97
+) -> float:
     """Mean specificity across the sensitivity range the model operates in.
 
     Reported as HSAS@97. Deliberately not called partial AUC: a reader would
@@ -100,12 +102,14 @@ def high_sensitivity_average_specificity(
     """
     labels = np.asarray(labels)
     if len(np.unique(labels)) < 2:
-        raise ValueError("HSAS cần cả hai lớp; chỉ thấy "
-                         f"{np.unique(labels).tolist()}")
+        raise ValueError(
+            "HSAS cần cả hai lớp; chỉ thấy " f"{np.unique(labels).tolist()}"
+        )
     # drop_intermediate discards points sklearn judges unnecessary for
     # plotting, which can include ones inside the narrow band being integrated.
-    fpr, tpr, _ = roc_curve(labels, np.asarray(probs, dtype=float),
-                            drop_intermediate=False)
+    fpr, tpr, _ = roc_curve(
+        labels, np.asarray(probs, dtype=float), drop_intermediate=False
+    )
 
     # An ROC can hold several points at one sensitivity; the reachable
     # operating point is the cheapest of them. Interpolating through the
@@ -126,10 +130,12 @@ def high_sensitivity_average_specificity(
     return float(area / (1.0 - min_sensitivity))
 
 
-def better_checkpoint(candidate: Dict[str, float],
-                      incumbent: Optional[Dict[str, float]],
-                      specificity_tie: float = SPECIFICITY_TIE,
-                      hsas_tie: float = HSAS_TIE):
+def better_checkpoint(
+    candidate: Dict[str, float],
+    incumbent: Optional[Dict[str, float]],
+    specificity_tie: float = SPECIFICITY_TIE,
+    hsas_tie: float = HSAS_TIE,
+):
     """Decide whether an epoch should replace the one currently held.
 
     Specificity at the sensitivity target decides first, since it is the

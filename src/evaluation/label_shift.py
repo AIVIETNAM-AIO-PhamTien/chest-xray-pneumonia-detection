@@ -41,8 +41,9 @@ def _sigmoid(z: np.ndarray) -> np.ndarray:
     return 1.0 / (1.0 + np.exp(-np.asarray(z, dtype=float)))
 
 
-def prior_correct(probs: np.ndarray, source_prior: float,
-                  target_prior: float) -> np.ndarray:
+def prior_correct(
+    probs: np.ndarray, source_prior: float, target_prior: float
+) -> np.ndarray:
     """Shift scores from a source prior to a target prior.
 
     Adds the difference of prior log-odds, which is the exact correction when
@@ -60,8 +61,12 @@ def prior_correct(probs: np.ndarray, source_prior: float,
     return _sigmoid(_logit(probs) + shift)
 
 
-def em_prior(probs: np.ndarray, source_prior: float, max_iterations: int = 500,
-             tolerance: float = 1e-9) -> Dict[str, float]:
+def em_prior(
+    probs: np.ndarray,
+    source_prior: float,
+    max_iterations: int = 500,
+    tolerance: float = 1e-9,
+) -> Dict[str, float]:
     """Estimate the target prior by expectation maximisation, without labels.
 
     The Saerens-Latinne-Decaestecker procedure: reweight the source-calibrated
@@ -87,12 +92,19 @@ def em_prior(probs: np.ndarray, source_prior: float, max_iterations: int = 500,
             prior, converged = updated, True
             break
         prior = updated
-    return {"em_target_prior": prior, "em_iterations": step,
-            "em_converged": bool(converged)}
+    return {
+        "em_target_prior": prior,
+        "em_iterations": step,
+        "em_converged": bool(converged),
+    }
 
 
-def bbse_prior(source_labels: np.ndarray, source_probs: np.ndarray,
-               target_probs: np.ndarray, threshold: float) -> Dict[str, float]:
+def bbse_prior(
+    source_labels: np.ndarray,
+    source_probs: np.ndarray,
+    target_probs: np.ndarray,
+    threshold: float,
+) -> Dict[str, float]:
     """Estimate the target prior from hard predictions, without target labels.
 
     Black-box shift estimation: the source confusion matrix says how often each
@@ -116,10 +128,14 @@ def bbse_prior(source_labels: np.ndarray, source_probs: np.ndarray,
     for predicted in (0, 1):
         for actual in (0, 1):
             joint[predicted, actual] = np.mean(
-                (source_preds == predicted) & (source_labels == actual))
-    target_rates = np.array([
-        np.mean((np.asarray(target_probs) >= threshold).astype(int) == k)
-        for k in (0, 1)])
+                (source_preds == predicted) & (source_labels == actual)
+            )
+    target_rates = np.array(
+        [
+            np.mean((np.asarray(target_probs) >= threshold).astype(int) == k)
+            for k in (0, 1)
+        ]
+    )
     if abs(np.linalg.det(joint)) < 1e-12:
         return {"bbse_target_prior": np.nan, "bbse_solvable": False}
     weights = np.linalg.solve(joint, target_rates)
@@ -128,9 +144,12 @@ def bbse_prior(source_labels: np.ndarray, source_probs: np.ndarray,
     return {"bbse_target_prior": estimate, "bbse_solvable": True}
 
 
-def class_conditional_shift(source_labels: np.ndarray, source_probs: np.ndarray,
-                            target_labels: np.ndarray,
-                            target_probs: np.ndarray) -> Dict[str, float]:
+def class_conditional_shift(
+    source_labels: np.ndarray,
+    source_probs: np.ndarray,
+    target_labels: np.ndarray,
+    target_probs: np.ndarray,
+) -> Dict[str, float]:
     """Test whether score distributions within each class survive the move.
 
     This decides whether prior correction is even the right tool. Under label

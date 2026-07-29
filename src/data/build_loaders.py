@@ -110,9 +110,7 @@ def build_dataloaders(
     required = {"path", "label", "split"}
     missing = required.difference(frame.columns)
     if missing:
-        raise ValueError(
-            f"Split CSV is missing {sorted(missing)}. Run split.py first."
-        )
+        raise ValueError(f"Split CSV is missing {sorted(missing)}. Run split.py first.")
 
     frame["split"] = frame["split"].astype(str).str.lower()
     dataframes = {

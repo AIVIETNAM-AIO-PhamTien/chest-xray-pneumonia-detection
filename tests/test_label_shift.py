@@ -27,8 +27,7 @@ def _simulate(n, prior, separation=2.0, seed=0):
     labels = rng.binomial(1, prior, n)
     latent = rng.normal(labels * separation, 1.0)
     # Posterior under equal-variance Gaussians with this prior.
-    odds = (prior / (1 - prior)) * np.exp(separation * latent
-                                          - separation ** 2 / 2)
+    odds = (prior / (1 - prior)) * np.exp(separation * latent - separation**2 / 2)
     return labels, odds / (1 + odds)
 
 
@@ -98,8 +97,7 @@ def test_class_conditional_shift_is_small_under_pure_label_shift():
     source_labels, source_probs = _simulate(8000, 0.75, seed=5)
     target_labels, target_probs = _simulate(8000, 0.40, seed=6)
     as_source = prior_correct(target_probs, 0.40, 0.75)
-    out = class_conditional_shift(source_labels, source_probs,
-                                  target_labels, as_source)
+    out = class_conditional_shift(source_labels, source_probs, target_labels, as_source)
     assert out["ks_normal"] < 0.1
     assert out["ks_pneumonia"] < 0.1
 
@@ -108,6 +106,7 @@ def test_class_conditional_shift_detects_a_genuine_covariate_change():
     """When the classes themselves separate differently, the test must fire."""
     source_labels, source_probs = _simulate(8000, 0.5, separation=2.0, seed=7)
     target_labels, target_probs = _simulate(8000, 0.5, separation=0.6, seed=8)
-    out = class_conditional_shift(source_labels, source_probs,
-                                  target_labels, target_probs)
+    out = class_conditional_shift(
+        source_labels, source_probs, target_labels, target_probs
+    )
     assert out["ks_pneumonia"] > 0.2

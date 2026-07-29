@@ -2,8 +2,9 @@
 
 Use this file as a template: write your own ``nn.Module``, add a builder
 function with the exact keywords it needs, and decorate it with
-``@register_model("your_name")``. It will be auto-discovered — no other
-file needs to change.
+``@register_model("your_name")``. The registry does not auto-discover new
+files, so you must also import this module from ``src/models/__init__.py``
+for the decorator to run and the name to register.
 """
 
 import torch

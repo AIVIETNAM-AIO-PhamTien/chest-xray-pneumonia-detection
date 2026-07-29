@@ -143,6 +143,7 @@ def load_config(config_path: Union[str, Path]) -> Config:
     """
     with open(config_path, "r", encoding="utf-8") as f:
         raw = yaml.safe_load(f)
+    raw = raw or {}
 
     return Config(
         seed=raw.get("seed", 42),

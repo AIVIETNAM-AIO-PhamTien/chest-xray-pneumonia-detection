@@ -93,30 +93,47 @@ phù hợp với backbone pretrained, kể cả khi file nguồn đã được l
 ```
 chest-xray-pneumonia-detection/
 ├── configs/
-│   └── baseline.yaml         # hyperparameters cho baseline
+│   ├── baseline.yaml          # hyperparameters cho baseline lịch sử
+│   ├── protocol_a.yaml        # split image-level (a_paper_compatible)
+│   └── protocol_b.yaml        # split patient-grouped (b_patient_grouped, default)
 ├── data/
-│   ├── raw/                  # dataset gốc tải từ Kaggle (gitignored)
-│   └── processed/            # dữ liệu đã qua tiền xử lý (gitignored)
+│   ├── raw/                   # dataset gốc tải từ Kaggle (gitignored)
+│   └── processed/             # dữ liệu đã qua tiền xử lý (gitignored)
 ├── notebooks/
 │   ├── chest_xray_research_complete.ipynb # notebook canonical end-to-end
-│   ├── baseline_kaggle.ipynb # baseline v4 cũ, giữ làm bằng chứng
-│   ├── *-v6.ipynb            # các stage lịch sử, không cần chạy riêng nữa
-│   ├── result/               # train_log của từng lần chạy
-│   ├── results_v4/           # CSV/JSON của lần chạy đầy đủ mới nhất
-│   └── train_baseline.ipynb  # notebook CLI cũ
+│   ├── legacy/                # các bản notebook lịch sử (v2-v6, stage-b, deit...),
+│   │                          # không cần chạy lại — xem README.md ở gốc repo
+│   └── results_*/             # CSV/JSON theo từng giai đoạn thí nghiệm (không có
+│                              # thư mục nào là "mới nhất" duy nhất; xem mtime/tên)
 ├── src/
 │   ├── config.py              # dataclass Config + load_config từ YAML
-│   ├── dataset.py             # build_dataloaders (ImageFolder train/val/test)
-│   ├── transforms.py          # augmentation & preprocessing pipeline
-│   ├── models/                  # model architectures (registry pattern)
-│   ├── explainability/          # Grad-CAM dùng chung cho notebook/report
-│   ├── train.py                # training loop + CLI entrypoint
-│   ├── evaluate.py             # accuracy/precision/recall/f1/confusion matrix
-│   └── utils.py                 # set_seed, checkpoint, EarlyStopping
-├── models/                     # checkpoint đã train (gitignored)
-├── outputs/                    # log training, biểu đồ (gitignored)
-└── tests/
-    └── test_dataset.py         # smoke test cho transforms
+│   ├── dataset.py              # pipeline canonical: find_data_root, build_dataloaders
+│   │                          # (ImageFolder), compute_class_weights — không đổi số
+│   ├── transforms.py           # augmentation & preprocessing của pipeline canonical
+│   ├── splits.py                # build_manifest/make_splits (protocol A/B), dùng bởi
+│   │                          # cả notebook canonical và src/train.py
+│   ├── data/                    # pipeline riêng cho CLI baseline của src/train.py
+│   │                          # (CXRDataset, build_loaders, transforms, imbalance) —
+│   │                          # xem src/data/README.md
+│   ├── evaluation/               # calibration, label_shift, nuisance_features, selection
+│   ├── models/                    # model architectures (registry pattern)
+│   ├── explainability/             # Grad-CAM dùng chung cho notebook/report
+│   ├── train.py                 # training loop CLI baseline (không dùng cho số report)
+│   ├── evaluate.py              # accuracy/precision/recall/f1/confusion matrix
+│   └── utils.py                  # set_seed, checkpoint, EarlyStopping
+├── scripts/                        # audit & phân tích (jpeg_encoding_audit, paired_
+│                                 # factorial_tests, build_final_results, ...);
+│                                 # make_notebook_{v5,c2,stage_b,deit}.py là generator
+│                                 # tạo các notebook lịch sử trong notebooks/legacy/,
+│                                 # không cần chạy lại để tái lập report
+├── reports/                         # báo cáo theo từng giai đoạn — xem reports/README.md
+│                                 # cho thứ tự đọc; đã bị artifacts/final/ thay thế
+├── artifacts/final/                 # kết quả cuối, đóng băng + SHA-256 (canonical)
+├── docs/                            # tài liệu tổng hợp — xem docs/README.md
+├── clinical_review_package/          # gói đọc phim mù — xem clinical_review_package/README.md
+├── models/                         # checkpoint đã train (gitignored)
+├── outputs/                         # log training, biểu đồ (gitignored)
+└── tests/                          # 1 file test theo mỗi module trong src/
 ```
 
 ## Cài đặt (dev/test local, Windows)

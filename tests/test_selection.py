@@ -3,12 +3,9 @@
 import numpy as np
 import pytest
 
-from src.evaluation.selection import (
-    better_checkpoint,
-    exact_threshold_at_sensitivity,
-    high_sensitivity_average_specificity as hsas,
-    specificity_at_sensitivity,
-)
+from src.evaluation.selection import exact_threshold_at_sensitivity
+from src.evaluation.selection import high_sensitivity_average_specificity as hsas
+from src.evaluation.selection import specificity_at_sensitivity
 
 
 @pytest.fixture
@@ -92,8 +89,7 @@ def test_hsas_agrees_with_specificity_at_the_target():
     labels = np.r_[np.zeros(600, int), np.ones(600, int)]
     probs = np.r_[rng.beta(2, 6, 600), rng.beta(6, 2, 600)]
     discrete, _ = specificity_at_sensitivity(labels, probs, 0.97)
-    assert hsas(labels, probs, 0.97) == pytest.approx(
-        discrete, abs=0.12)
+    assert hsas(labels, probs, 0.97) == pytest.approx(discrete, abs=0.12)
 
 
 def test_hsas_sees_local_damage_global_auc_misses():
@@ -105,14 +101,14 @@ def test_hsas_sees_local_damage_global_auc_misses():
     where the threshold has to sit.
     """
     from sklearn.metrics import roc_auc_score
+
     labels = np.r_[np.zeros(400, int), np.ones(400, int)]
     probs = np.r_[np.linspace(0.0, 0.5, 400), np.linspace(0.5, 1.0, 400)]
     damaged = probs.copy()
     damaged[:8] = np.linspace(0.502, 0.512, 8)
 
     auc_drop = roc_auc_score(labels, probs) - roc_auc_score(labels, damaged)
-    pauc_drop = (hsas(labels, probs, 0.97)
-                 - hsas(labels, damaged, 0.97))
+    pauc_drop = hsas(labels, probs, 0.97) - hsas(labels, damaged, 0.97)
     assert auc_drop < 0.001
     assert pauc_drop > auc_drop * 10
 
@@ -127,11 +123,14 @@ def test_hsas_is_invariant_to_monotonic_rescaling(separable):
     """It reads the ranking, so any order-preserving map must leave it alone."""
     labels, probs = separable
     reference = hsas(labels, probs, 0.97)
-    for transform in (lambda p: p ** 3,
-                      lambda p: np.log(p + 1e-9),
-                      lambda p: 5.0 * p - 2.0):
+    for transform in (
+        lambda p: p**3,
+        lambda p: np.log(p + 1e-9),
+        lambda p: 5.0 * p - 2.0,
+    ):
         assert hsas(labels, transform(probs), 0.97) == pytest.approx(
-            reference, abs=1e-9)
+            reference, abs=1e-9
+        )
 
 
 def test_hsas_is_invariant_to_row_order(separable):
@@ -140,7 +139,8 @@ def test_hsas_is_invariant_to_row_order(separable):
     rng = np.random.default_rng(11)
     order = rng.permutation(len(labels))
     assert hsas(labels[order], probs[order], 0.97) == pytest.approx(
-        hsas(labels, probs, 0.97), abs=1e-12)
+        hsas(labels, probs, 0.97), abs=1e-12
+    )
 
 
 def test_hsas_ignores_dominated_operating_points():
@@ -155,7 +155,8 @@ def test_hsas_ignores_dominated_operating_points():
     padded_labels = np.r_[labels, np.zeros(3, int)]
     padded_probs = np.r_[probs, np.full(3, 0.001)]
     assert hsas(padded_labels, padded_probs, 0.97) == pytest.approx(
-        hsas(labels, probs, 0.97), abs=0.02)
+        hsas(labels, probs, 0.97), abs=0.02
+    )
 
 
 def test_hsas_weights_the_operating_region_more_than_global_auc(separable):
@@ -167,6 +168,7 @@ def test_hsas_weights_the_operating_region_more_than_global_auc(separable):
     weighting -- HSAS reacts to the same error more strongly than global AUC.
     """
     from sklearn.metrics import roc_auc_score
+
     labels, probs = separable
     rng = np.random.default_rng(21)
     damaged = probs.copy()
@@ -188,7 +190,7 @@ def test_hsas_ignores_everything_below_the_region():
     however far apart global AUC ends up.
     """
     from sklearn.metrics import roc_auc_score
-    rng = np.random.default_rng(31)
+
     n = 600
     labels = np.r_[np.zeros(n, int), np.ones(n, int)]
 
@@ -199,15 +201,18 @@ def test_hsas_ignores_everything_below_the_region():
 
     # Variant A spreads its remaining positives; variant B piles them high.
     tail_a = np.linspace(0.60, 1.00, n - 30)
-    tail_b = np.r_[np.linspace(0.54, 0.58, (n - 30) // 2),
-                   np.full(n - 30 - (n - 30) // 2, 0.99)]
+    tail_b = np.r_[
+        np.linspace(0.54, 0.58, (n - 30) // 2), np.full(n - 30 - (n - 30) // 2, 0.99)
+    ]
 
     probs_a = np.r_[low_negatives, low_positives, tail_a]
     probs_b = np.r_[low_negatives, low_positives, tail_b]
 
     assert hsas(labels, probs_a, 0.97) == pytest.approx(
-        hsas(labels, probs_b, 0.97), abs=1e-9)
+        hsas(labels, probs_b, 0.97), abs=1e-9
+    )
     # Both rank perfectly here, so the point is the invariance itself:
     # rearranging the comfortably-caught positives cannot move the metric.
     assert roc_auc_score(labels, probs_a) == pytest.approx(
-        roc_auc_score(labels, probs_b), abs=1e-9)
+        roc_auc_score(labels, probs_b), abs=1e-9
+    )

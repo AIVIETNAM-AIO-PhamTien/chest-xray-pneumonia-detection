@@ -5,8 +5,12 @@
 | [`handbook_cxr_pneumonia.md`](handbook_cxr_pneumonia.md) | Handbook 18 mục: bối cảnh lĩnh vực, dataset, kiến trúc, tiền xử lý, cách train/eval đúng, các mâu thuẫn trong paper chính, protocol reproduce, roadmap thí nghiệm, checklist review paper |
 | [`paper_review_slimi_2025.md`](paper_review_slimi_2025.md) | Review paper Slimi et al. 2025 (CNN + Bi-GRU + SNN), theo template QA |
 
-Cả hai giữ **nguyên văn** để bảo toàn provenance. Mọi cập nhật sau này ghi ở dưới,
-không sửa trực tiếp vào thân tài liệu.
+Cả hai giữ **nguyên văn** để bảo toàn provenance — cụ thể, cả hai là bản sao
+byte-for-byte của file trong `../paper/` (`tong_hop_chi_tiet_chest_xray_pneumonia.md`
+và `tonghop2.md`), thư mục nằm ngoài git repo này và không có version control
+riêng. Sửa ở nguồn trong `paper/` trước, rồi copy lại vào đây; đừng sửa thẳng
+ở đây rồi quên đồng bộ ngược, hai bản sẽ lệch nhau âm thầm. Mọi cập nhật sau
+này ghi ở dưới, không sửa trực tiếp vào thân tài liệu.
 
 ---
 

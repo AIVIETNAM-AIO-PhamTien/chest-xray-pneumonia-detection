@@ -7,8 +7,5 @@ line-length = 88
 profile = "black"
 line_length = 88
 
-[tool.pytest.ini_options]
-# Puts the repo root on sys.path so `from src.x import ...` resolves when
-# tests are run as plain `pytest tests/` (not just `python -m pytest`).
-pythonpath = ["."]
-testpaths = ["tests"]
+# pytest config lives in pytest.ini (pytest reads that in preference to this
+# section if both exist, so keeping both here and there is dead weight).
