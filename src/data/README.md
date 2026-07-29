@@ -1,7 +1,11 @@
-# CXR data pipeline
+# CXR data pipeline (src/train.py's single-holdout CLI baseline)
 
-This package covers local dataset indexing, image validation, split creation,
-augmentation, class-imbalance handling, and PyTorch DataLoaders.
+This package is the DataLoader/imbalance-handling half of `src/train.py`'s
+historical single-holdout CLI baseline. Per CLAUDE.md, `src.train` is not used
+to produce the final 5-fold report numbers -- that pipeline lives in
+`src/dataset.py` + `src/transforms.py` + `src/splits.py` instead (used by the
+canonical `notebooks/chest_xray_research_complete.ipynb` and the report/audit
+scripts). See the module docstring in `src/data/__init__.py`.
 
 It does **not** silently download the dataset. Download the Kaggle dataset first:
 
@@ -19,54 +23,37 @@ src/data/
   cxr_dataset.py    Robust local image reader
   transforms.py     none / paper / advanced augmentation policies
   imbalance.py      sampler, class weights, effective weights, focal loss
-  prepare.py        Folder scanner and manifest creator
-  split.py          official, paper-style, or all-data split strategies
   build_loaders.py  End-to-end Dataset + DataLoader + criterion builder
 ```
 
+Manifest building and train/val/test split assignment for this baseline are
+handled by `src/splits.py` (`build_manifest`, `make_splits`), the same module
+the canonical notebook uses -- `src/train.py` calls it directly and writes the
+resulting split CSV before handing it to `build_loaders.build_dataloaders`
+below. There is no standalone CLI step for this anymore; run
+`python -m src.train --config configs/protocol_b.yaml` to exercise the whole
+chain end to end.
+
 ## Recommended workflow
 
-### 1. Build a manifest
+### 1. Build a manifest + split CSV with src/splits.py
 
-```bash
-python -m src.data.prepare \
-  --input-root data/raw \
-  --output data/processed/cxr_manifest.csv \
-  --compute-hash
+`src/splits.py` has no CLI of its own; call it directly (this is exactly what
+`src/train.py` does internally):
+
+```python
+from src.dataset import find_data_root
+from src.splits import build_manifest, make_splits, save_manifest
+
+root = find_data_root("data/raw")
+manifest = make_splits(build_manifest(root), protocol="b_patient_grouped", seed=42)
+save_manifest(
+    manifest[["path", "class_id", "split"]].rename(columns={"class_id": "label"}),
+    "data/processed/cxr_splits.csv",
+)
 ```
 
-This scans the downloaded folders, validates images, stores relative paths,
-extracts a best-effort patient ID, and optionally hashes files to detect exact
-duplicates.
-
-### 2. Create splits
-
-Recommended trustworthy setup: keep the supplied test folder untouched and
-create a new validation set from the original train+val pool.
-
-```bash
-python -m src.data.split \
-  --input data/processed/cxr_manifest.csv \
-  --output data/processed/cxr_splits.csv \
-  --strategy official \
-  --val-size 0.10 \
-  --seed 42
-```
-
-Paper-style 80/20 image-level reproduction using original train+val only:
-
-```bash
-python -m src.data.split \
-  --input data/processed/cxr_manifest.csv \
-  --output data/processed/cxr_paper_splits.csv \
-  --strategy paper \
-  --test-size 0.20 \
-  --val-size 0 \
-  --group-col "" \
-  --seed 42
-```
-
-### 3. Smoke-test DataLoaders
+### 2. Smoke-test DataLoaders
 
 ```bash
 python -m src.data.build_loaders \

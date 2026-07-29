@@ -1,73 +1,29 @@
-"""Dataset and DataLoader construction for the chest X-ray pneumonia dataset."""
+"""Dataset and DataLoader construction for the chest X-ray pneumonia dataset.
+
+This module (plus src/transforms.py and src/splits.py) is the pipeline used
+by the canonical research notebook (chest_xray_research_complete.ipynb) and
+the audit scripts to produce the frozen, hash-verified final numbers. Do not
+change any code path reachable from build_dataloaders() or the transforms in
+a way that alters its numeric output -- that would invalidate the frozen
+checkpoints and manifests under artifacts/final/.
+
+src/train.py's a_paper_compatible/b_patient_grouped protocols instead use a
+separate, deliberately-kept pipeline in src/data/ (CXRDataset, build_loaders,
+its own transforms/imbalance handling) for the historical single-holdout CLI
+baseline -- see CLAUDE.md ("src.train vẫn là CLI baseline/single-holdout;
+không dùng nó để tạo số cuối trong report 5-fold"). The two are intentionally
+separate pipelines for two different purposes, not accidental duplication.
+"""
 
 from collections import Counter
 from pathlib import Path
-from typing import Callable, Dict, List, Optional, Sequence, Tuple, Union
+from typing import Dict, List, Tuple, Union
 
 import torch
-from PIL import Image
 from torch.utils.data import DataLoader, Dataset
 from torchvision.datasets import ImageFolder
 
 from src.transforms import get_eval_transforms, get_train_transforms
-
-
-class ManifestDataset(Dataset):
-    """Dataset backed by an explicit (path, label) list rather than folders.
-
-    ImageFolder derives labels from directory layout, which cannot express a
-    split that cuts across the published folders. Driving the dataset from a
-    manifest keeps the exact file list for a run inspectable and reproducible.
-
-    Attributes:
-        rows: The (image path, class id) pairs this dataset serves.
-        transform: Transform applied to each loaded image.
-        targets: Class id per sample, exposed for compute_class_weights.
-    """
-
-    def __init__(
-        self,
-        rows: Sequence[Tuple[str, int]],
-        transform: Optional[Callable] = None,
-        class_to_idx: Optional[Dict[str, int]] = None,
-    ) -> None:
-        """Initialize the dataset.
-
-        Args:
-            rows: Sequence of (image path, class id) pairs.
-            transform: Transform applied to each PIL image.
-            class_to_idx: Class name to id mapping; defaults to
-                {"NORMAL": 0, "PNEUMONIA": 1}.
-        """
-        self.rows = list(rows)
-        self.transform = transform
-        self.class_to_idx = class_to_idx or {"NORMAL": 0, "PNEUMONIA": 1}
-        self.targets = [label for _, label in self.rows]
-
-    def __len__(self) -> int:
-        """Return the number of samples.
-
-        Returns:
-            Sample count.
-        """
-        return len(self.rows)
-
-    def __getitem__(self, index: int) -> Tuple[torch.Tensor, int]:
-        """Load and transform one sample.
-
-        Args:
-            index: Position in the manifest.
-
-        Returns:
-            A (image tensor, class id) tuple.
-        """
-        path, label = self.rows[index]
-        # 283 of the 5,856 published files are stored as RGB rather than
-        # grayscale, so the mode is normalised here as well as in transforms.
-        image = Image.open(path).convert("L")
-        if self.transform is not None:
-            image = self.transform(image)
-        return image, label
 
 
 def find_data_root(search_paths: Union[str, Path, List[Union[str, Path]]]) -> Path:
@@ -190,49 +146,3 @@ def build_dataloaders(
         ),
     }
     return loaders, train_set.class_to_idx
-
-
-def build_dataloaders_from_manifest(
-    manifest,
-    image_size: int = 224,
-    batch_size: int = 32,
-    num_workers: int = 2,
-) -> Tuple[Dict[str, DataLoader], Dict[str, int]]:
-    """Build DataLoaders from a manifest carrying an explicit "split" column.
-
-    Use this instead of build_dataloaders when the train/val boundary comes
-    from a split protocol rather than the published folder layout (see
-    src/splits.py).
-
-    Args:
-        manifest: DataFrame from src.splits.make_splits.
-        image_size: Target square size (in pixels) for resized images.
-        batch_size: Number of samples per batch.
-        num_workers: Number of worker processes for data loading.
-
-    Returns:
-        A tuple of (loaders, class_to_idx), matching build_dataloaders.
-    """
-    from src.splits import manifest_rows
-
-    class_to_idx = {"NORMAL": 0, "PNEUMONIA": 1}
-    transforms_by_split = {
-        "train": get_train_transforms(image_size),
-        "val": get_eval_transforms(image_size),
-        "test": get_eval_transforms(image_size),
-    }
-
-    loaders = {}
-    for split, transform in transforms_by_split.items():
-        dataset = ManifestDataset(
-            manifest_rows(manifest, split),
-            transform=transform,
-            class_to_idx=class_to_idx,
-        )
-        loaders[split] = DataLoader(
-            dataset,
-            batch_size=batch_size,
-            shuffle=(split == "train"),
-            num_workers=num_workers,
-        )
-    return loaders, class_to_idx
