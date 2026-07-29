@@ -21,6 +21,9 @@ def evaluate(
     Returns:
         A dict with float entries "accuracy", "precision", "recall", "f1",
         plus "confusion_matrix" holding a nested list of counts.
+
+    Raises:
+        ValueError: If the loader yields no samples.
     """
     model.eval()
     all_preds = []
@@ -32,6 +35,9 @@ def evaluate(
         preds = logits.argmax(dim=1).cpu()
         all_preds.extend(preds.tolist())
         all_labels.extend(labels.tolist())
+
+    if not all_labels:
+        raise ValueError("evaluate() received an empty DataLoader.")
 
     accuracy = sum(p == label for p, label in zip(all_preds, all_labels)) / len(
         all_labels
