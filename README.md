@@ -4,6 +4,12 @@ Phân loại nhị phân phát hiện viêm phổi (Pneumonia) từ ảnh X-quan
 Pipeline nghiên cứu cuối ghép ResNet18 + DenseNet121 qua 5 fold mỗi kiến trúc;
 repo vẫn giữ `SimpleCNN` và CLI ResNet18 để tái hiện baseline lịch sử.
 
+![Pipeline nghiên cứu: ảnh X-quang qua tiền xử lý và augmentation, vào hai backbone ResNet18 và DenseNet121, gộp xác suất theo filename-derived group, ghép mô hình bằng trung bình xác suất, khóa ngưỡng trên pooled OOF rồi mới đánh giá trên tập test](figures/pipeline.png)
+
+Ngưỡng phân loại được khóa **một lần** trên pooled out-of-fold; tập test chỉ được
+đọc sau đó. Grad-CAM chạy sau cùng như bước hậu kiểm, không tham gia vào bất kỳ
+quyết định huấn luyện hay chọn mô hình nào.
+
 ## Bắt đầu từ đâu
 
 | Muốn gì | Đi đâu |
@@ -28,8 +34,18 @@ out-of-fold. Đơn vị đánh giá là filename-derived group.
 | ROC-AUC | 0,9792 |
 | TN / FP / FN / TP | 185 / 40 / 1 / 202 |
 
-So với ResNet18 đơn: từ 52 xuống 40 ca báo nhầm, không tăng ca bỏ sót.
-McNemar p = 0,0005.
+So với ResNet18 B1 (cùng tiền xử lý): từ 52 xuống 40 ca báo động giả, không tăng
+ca bỏ sót, McNemar p = 0,0005.
+
+Hai điều cần đọc kèm con số trên:
+
+- **So với DenseNet121 đơn lẻ, mô hình ghép không chứng minh được là hơn.** Chỉ
+  hơn 4 ca ròng (sửa 6, phá 2), p = 0,2891, khoảng tin cậy chứa 0. Nó được giữ vì
+  thỏa ràng buộc độ nhạy, cho số báo động giả thấp nhất và không giảm độ nhạy —
+  ba tiêu chí khóa trước, không phải vì thắng về thống kê.
+- **Mốc so sánh quyết định con số cải thiện.** So với baseline đầu tiên
+  (letterbox + augmentation nhẹ) thì là 74 → 40, nhưng 22 trong 34 ca đó đến từ
+  việc đổi resize sang stretch, chỉ 12 ca đến từ việc ghép mô hình.
 
 Đầy đủ ở [`artifacts/final/reports/`](artifacts/final/reports/).
 
@@ -99,6 +115,8 @@ chest-xray-pneumonia-detection/
 ├── data/
 │   ├── raw/                   # dataset gốc tải từ Kaggle (gitignored)
 │   └── processed/             # dữ liệu đã qua tiền xử lý (gitignored)
+├── figures/
+│   └── pipeline.png           # sơ đồ pipeline dùng ở đầu README và trong report
 ├── notebooks/
 │   ├── chest_xray_research_complete.ipynb # notebook canonical end-to-end
 │   ├── legacy/                # các bản notebook lịch sử (v2-v6, stage-b, deit...),
@@ -164,6 +182,10 @@ Chi tiết nằm trong
   `DATA_ROOT_OVERRIDE` hoặc biến môi trường `CXR_DATA_ROOT`.
 - Full run gồm ResNet18 + DenseNet121 × 5 fold. Notebook khóa ngưỡng bằng pooled
   OOF trước khi đọc known benchmark, rồi chạy error analysis và Grad-CAM.
+- **Phần cứng đã dùng cho số trong report:** Kaggle Notebook, một GPU Tesla T4,
+  AMP bật, 2 dataloader worker. Khoảng 2,0 phút mỗi fold với ResNet18 và 4,5 phút
+  mỗi fold với DenseNet121. Mã nguồn không dùng data/model parallel nên thêm GPU
+  thứ hai không rút ngắn thời gian.
 - `reproduce` tái tính đúng 202/203 sensitivity và 185/225 specificity từ
   artifact đóng băng, đồng thời kiểm tra bằng assertion.
 
@@ -275,6 +297,7 @@ Các bước còn giá trị nghiên cứu là:
 - lặp lại nhiều seed, báo khoảng dao động thay vì chỉ một seed;
 - đánh giá calibration, subgroup và lung segmentation/cropping dưới một giao
   thức khóa trước;
-- thực hiện đọc phim mù cho các ca báo nhầm trước khi diễn giải lâm sàng.
+- thực hiện đọc phim mù cho các ca báo động giả trước khi diễn giải lâm sàng
+  (gói đã dựng sẵn, ưu tiên 16 ca mà mô hình sai với xác suất > 0,90).
 
 Chi tiết đầy đủ xem [`CLAUDE.md`](CLAUDE.md).
